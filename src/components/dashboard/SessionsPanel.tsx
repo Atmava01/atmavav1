@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ExternalLink, Calendar, Clock, User, Video } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getActiveEnrollment, getUpcomingSessionsForProgram } from "@/lib/firestore";
+import { getActiveEnrollment, getUpcomingSessionsForBatch } from "@/lib/firestore";
 import type { Session, Enrollment } from "@/types";
 
 function formatDate(dateStr: string): string {
@@ -35,11 +35,13 @@ export function SessionsPanel() {
     getActiveEnrollment(user.uid)
       .then(async (e) => {
         setEnrollment(e);
-        if (e?.programId) {
-          const s = await getUpcomingSessionsForProgram(e.programId);
+        if (e?.programId && e?.batch) {
+          const s = await getUpcomingSessionsForBatch(e.programId, e.batch);
           setSessions(s);
-        } else if (userProfile?.programId) {
-          const s = await getUpcomingSessionsForProgram(userProfile.programId);
+        } else if (e?.programId) {
+          // fallback: no batch set, show all sessions for program
+          const { getUpcomingSessionsForProgram } = await import("@/lib/firestore");
+          const s = await getUpcomingSessionsForProgram(e.programId);
           setSessions(s);
         }
         setLoading(false);
@@ -70,7 +72,9 @@ export function SessionsPanel() {
           Live Sessions
         </h2>
         <p className="text-xs md:text-sm mt-1" style={{ color: "#7A7771" }}>
-          {enrollment ? `${enrollment.programId}-Day Program` : userProfile?.programTitle ?? "Your Program"} · Upcoming sessions
+          {enrollment
+            ? `${enrollment.programId}-Day Program · ${enrollment.batch || ""} Batch · ${enrollment.level || ""}`
+            : userProfile?.programTitle ?? "Your Program"} — Upcoming sessions
         </p>
       </motion.div>
 

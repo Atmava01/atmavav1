@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { getProgramById } from "@/lib/firestore";
+import type { Program } from "@/types";
 
 interface Props {
   programId: string;
@@ -14,7 +16,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Step = "confirm" | "loading" | "processing" | "success" | "error";
+type Step = "select" | "confirm" | "loading" | "processing" | "success" | "error";
 
 /** Loads the Razorpay checkout.js script exactly once. */
 function loadRazorpayScript(): Promise<boolean> {
@@ -31,15 +33,42 @@ function loadRazorpayScript(): Promise<boolean> {
 export function PaymentModal({ programId, programTitle, durationDays, price, onClose }: Props) {
   const { user } = useAuth();
   const router   = useRouter();
-  const [step, setStep]     = useState<Step>("confirm");
-  const [error, setError]   = useState("");
+
+  const [step, setStep]             = useState<Step>("select");
+  const [error, setError]           = useState("");
   const [redirectTo, setRedirectTo] = useState("/dashboard");
 
-  // Restore body scroll on unmount
+  const [programData, setProgramData]       = useState<Program | null>(null);
+  const [programLoading, setProgramLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel]   = useState("");
+  const [selectedBatch, setSelectedBatch]   = useState("");
+
+  // Lock body scroll on mount
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
+
+  // Fetch program batches/levels from Firestore
+  useEffect(() => {
+    getProgramById(programId)
+      .then(p => {
+        setProgramData(p);
+        // Skip select step if program has no batches/levels
+        if (!p || (p.levels.length === 0 && p.batches.length === 0)) {
+          setStep("confirm");
+        }
+        setProgramLoading(false);
+      })
+      .catch(() => {
+        setProgramLoading(false);
+        setStep("confirm");
+      });
+  }, [programId]);
+
+  const hasLevels  = (programData?.levels?.length ?? 0) > 0;
+  const hasBatches = (programData?.batches?.length ?? 0) > 0;
+  const canProceed = (!hasLevels || !!selectedLevel) && (!hasBatches || !!selectedBatch);
 
   const handlePayment = async () => {
     if (!user) {
@@ -55,7 +84,7 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
       if (!loaded) throw new Error("Failed to load payment SDK. Check your connection.");
 
       // 2. Create order on backend
-      const idToken  = await user.getIdToken();
+      const idToken  = await user.getIdToken(true);
       const orderRes = await fetch("/api/payments/create-order", {
         method:  "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
@@ -96,7 +125,7 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
           }) => {
             try {
               // 4. Verify payment on backend
-              const token     = await user.getIdToken();
+              const token     = await user.getIdToken(true);
               const verifyRes = await fetch("/api/payments/verify", {
                 method:  "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -105,6 +134,8 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature:  response.razorpay_signature,
                   programId,
+                  level: selectedLevel,
+                  batch: selectedBatch,
                 }),
               });
 
@@ -137,7 +168,6 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
   };
 
   const handleSuccessContinue = () => {
-    // Hard navigation so AuthContext re-fetches the updated profile
     window.location.href = redirectTo;
   };
 
@@ -160,6 +190,96 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
       >
         <AnimatePresence mode="wait">
 
+          {/* ── Select step — Level & Batch ───────────────────────────────── */}
+          {step === "select" && (
+            <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-7">
+                <div>
+                  <p className="text-xs tracking-widest uppercase mb-1" style={{ color: "rgba(246,244,239,0.4)" }}>Enroll in</p>
+                  <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", color: "#F6F4EF", fontWeight: 300 }}>
+                    {programTitle}
+                  </h2>
+                </div>
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(246,244,239,0.5)" }}>✕</button>
+              </div>
+
+              {programLoading ? (
+                <div className="flex justify-center py-12">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 rounded-full border-2 border-t-transparent"
+                    style={{ borderColor: "#7A8C74" }}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-6 mb-8">
+                  {/* Level selection */}
+                  {hasLevels && (
+                    <div>
+                      <p className="text-xs tracking-widest uppercase mb-3" style={{ color: "rgba(246,244,239,0.5)" }}>Your Level</p>
+                      <div className="space-y-2">
+                        {programData!.levels.map(l => (
+                          <motion.button
+                            key={l}
+                            onClick={() => setSelectedLevel(l)}
+                            className="w-full p-4 rounded-xl text-left"
+                            style={{
+                              background: selectedLevel === l ? "rgba(122,140,116,0.2)" : "rgba(255,255,255,0.04)",
+                              border: `1px solid ${selectedLevel === l ? "rgba(122,140,116,0.5)" : "rgba(255,255,255,0.08)"}`,
+                            }}
+                            whileHover={{ background: "rgba(255,255,255,0.07)" }}
+                          >
+                            <span className="text-sm" style={{ color: "#F6F4EF" }}>{l}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Batch selection */}
+                  {hasBatches && (
+                    <div>
+                      <p className="text-xs tracking-widest uppercase mb-3" style={{ color: "rgba(246,244,239,0.5)" }}>Select Batch</p>
+                      <div className="space-y-2">
+                        {programData!.batches.map(b => (
+                          <motion.button
+                            key={b.name}
+                            onClick={() => setSelectedBatch(b.name)}
+                            className="w-full p-4 rounded-xl text-left"
+                            style={{
+                              background: selectedBatch === b.name ? "rgba(122,140,116,0.2)" : "rgba(255,255,255,0.04)",
+                              border: `1px solid ${selectedBatch === b.name ? "rgba(122,140,116,0.5)" : "rgba(255,255,255,0.08)"}`,
+                            }}
+                            whileHover={{ background: "rgba(255,255,255,0.07)" }}
+                          >
+                            <p className="text-sm" style={{ color: "#F6F4EF" }}>{b.name}</p>
+                            <p className="text-xs mt-0.5" style={{ color: "rgba(246,244,239,0.4)" }}>{b.time}</p>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <motion.button
+                onClick={() => setStep("confirm")}
+                disabled={programLoading || !canProceed}
+                className="w-full py-4 rounded-xl text-sm tracking-widest uppercase"
+                style={{
+                  background: !programLoading && canProceed ? "#5C6B57" : "rgba(255,255,255,0.06)",
+                  color:      !programLoading && canProceed ? "#F6F4EF" : "rgba(246,244,239,0.3)",
+                }}
+                whileHover={canProceed && !programLoading ? { background: "#4A5645" } : {}}
+                whileTap={canProceed && !programLoading ? { scale: 0.98 } : {}}
+              >
+                Continue →
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* ── Confirm step ────────────────────────────────────────────── */}
           {step === "confirm" && (
             <motion.div key="confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-8">
@@ -178,6 +298,8 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
               <div className="p-5 rounded-xl mb-6" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 {[
                   { label: "Program",  val: `${durationDays} Day Journey` },
+                  ...(selectedLevel ? [{ label: "Level",    val: selectedLevel, highlight: false }] : []),
+                  ...(selectedBatch ? [{ label: "Batch",    val: selectedBatch, highlight: false }] : []),
                   { label: "Duration", val: `${durationDays} Days access` },
                   { label: "Currency", val: "INR (Indian Rupee)" },
                   { label: "Total",    val: `₹${price.toLocaleString("en-IN")}`, highlight: true },
@@ -209,7 +331,7 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
             </motion.div>
           )}
 
-          {/* ── Loading step ─────────────────────────────────────────────── */}
+          {/* ── Loading / Processing steps ────────────────────────────────── */}
           {(step === "loading" || step === "processing") && (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="p-12 flex flex-col items-center justify-center gap-5">
@@ -229,7 +351,6 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
           {step === "success" && (
             <motion.div key="success" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
               className="p-10 flex flex-col items-center text-center gap-5">
-              {/* Checkmark */}
               <motion.div
                 className="w-16 h-16 rounded-full flex items-center justify-center"
                 style={{ background: "rgba(122,140,116,0.15)", border: "1px solid rgba(122,140,116,0.3)" }}

@@ -2,57 +2,105 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Edit2, Trash2, Copy, ExternalLink, Calendar } from "lucide-react";
+import { Plus, Edit2, Trash2, Copy, ExternalLink, Calendar, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSessionsByMentor } from "@/lib/firestore";
-import type { Session } from "@/types";
+import {
+  getSessionsByMentor,
+  getPrograms,
+  getStudentsForProgram,
+  getAttendanceForSession,
+  upsertAttendance,
+} from "@/lib/firestore";
+import type { Session, Program, Enrollment, UserProfile, Attendance } from "@/types";
 
 type Tab = "upcoming" | "past";
+type StudentRow = { enrollment: Enrollment; userProfile: UserProfile };
 
 const PROGRAMS = [
-  { id: "30", label: "30 Days — Foundation" },
-  { id: "60", label: "60 Days — Deepening" },
-  { id: "90", label: "90 Days — Inner Mastery" },
+  { id: "30", label: "30-Day Foundation" },
+  { id: "60", label: "60-Day Deepening" },
+  { id: "90", label: "90-Day Inner Mastery" },
 ];
 
 const EMPTY_FORM = {
   title: "",
   programId: "30",
+  batch: "",
   date: new Date().toISOString().split("T")[0],
-  startTime: "10:00",
-  endTime: "11:00",
+  startTime: "06:30",
+  endTime: "07:30",
   meetLink: "",
 };
 
 export function MentorSessions() {
   const { user, userProfile } = useAuth();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [tab, setTab]           = useState<Tab>("upcoming");
-  const [creating, setCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [saving, setSaving]     = useState(false);
-  const [formError, setFormError] = useState("");
+
+  const [sessions, setSessions]     = useState<Session[]>([]);
+  const [program, setProgram]       = useState<Program | null>(null);
+  const [students, setStudents]     = useState<StudentRow[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [tab, setTab]               = useState<Tab>("upcoming");
+  const [creating, setCreating]     = useState(false);
+  const [editingId, setEditingId]   = useState<string | null>(null);
+  const [form, setForm]             = useState({ ...EMPTY_FORM });
+  const [saving, setSaving]         = useState(false);
+  const [formError, setFormError]   = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [copied, setCopied]     = useState<string | null>(null);
+  const [copied, setCopied]         = useState<string | null>(null);
+
+  // Attendance state: keyed by sessionId
+  const [attendanceOpen, setAttendanceOpen] = useState<string | null>(null);
+  const [attendanceData, setAttendanceData] = useState<Record<string, Attendance[]>>({});
+  const [attendanceDraft, setAttendanceDraft] = useState<Record<string, boolean>>({}); // userId → present
+  const [savingAttendance, setSavingAttendance] = useState(false);
+  const [attendanceMsg, setAttendanceMsg] = useState<string | null>(null);
+
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     if (!user) return;
-    getSessionsByMentor(user.uid)
-      .then(s => {
-        setSessions(s.sort((a, z) => a.date.localeCompare(z.date)));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [allSessions, allPrograms] = await Promise.all([
+          getSessionsByMentor(user!.uid),
+          getPrograms(),
+        ]);
+        if (cancelled) return;
+
+        setSessions(allSessions.sort((a, z) => a.date.localeCompare(z.date)));
+
+        const myProgram = allPrograms.find(p => p.mentorId === user!.uid) ?? null;
+        setProgram(myProgram);
+
+        if (myProgram) {
+          const rows = await getStudentsForProgram(myProgram.id);
+          if (!cancelled) setStudents(rows);
+
+          // Pre-fill form programId and first batch
+          setForm(f => ({
+            ...f,
+            programId: myProgram.id,
+            batch: myProgram.batches[0]?.name ?? "",
+          }));
+        }
+      } catch {
+        // silently ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
   }, [user?.uid]);
 
-  const today    = new Date().toISOString().split("T")[0];
-  const upcoming = sessions.filter(s => s.date >= today);
-  const past     = sessions.filter(s => s.date <  today);
+  const upcoming  = sessions.filter(s => s.date >= today);
+  const past      = sessions.filter(s => s.date <  today);
   const displayed = tab === "upcoming" ? upcoming : past;
 
-  // ── Create ───────────────────────────────────────────────────────────────
+  // ── Create ──────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!user || !form.title || !form.date || !form.meetLink) {
       setFormError("Please fill in title, date, and meet link.");
@@ -64,13 +112,22 @@ export function MentorSessions() {
       const res = await fetch("/api/sessions/create", {
         method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ programId: form.programId, title: form.title, date: form.date, startTime: form.startTime, endTime: form.endTime, meetLink: form.meetLink }),
+        body: JSON.stringify({
+          programId: form.programId,
+          batch: form.batch,
+          title: form.title,
+          date: form.date,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          meetLink: form.meetLink,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed to create session");
       const { sessionId } = await res.json();
       const newSess: Session = {
         id: sessionId,
         programId: form.programId,
+        batch: form.batch,
         mentorId: user.uid,
         mentorName: userProfile?.name ?? "Mentor",
         title: form.title,
@@ -81,7 +138,7 @@ export function MentorSessions() {
         createdAt: new Date().toISOString(),
       };
       setSessions(prev => [...prev, newSess].sort((a, z) => a.date.localeCompare(z.date)));
-      setForm({ ...EMPTY_FORM });
+      setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch }));
       setCreating(false);
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Error creating session");
@@ -90,7 +147,7 @@ export function MentorSessions() {
     }
   };
 
-  // ── Edit ─────────────────────────────────────────────────────────────────
+  // ── Edit ────────────────────────────────────────────────────────────────────
   const handleEdit = async (id: string) => {
     if (!user || !form.title || !form.meetLink) {
       setFormError("Please fill in title and meet link.");
@@ -102,17 +159,24 @@ export function MentorSessions() {
       const res = await fetch(`/api/sessions/${id}`, {
         method:  "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title: form.title, date: form.date, startTime: form.startTime, endTime: form.endTime, meetLink: form.meetLink }),
+        body: JSON.stringify({
+          title: form.title,
+          batch: form.batch,
+          date: form.date,
+          startTime: form.startTime,
+          endTime: form.endTime,
+          meetLink: form.meetLink,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed to update session");
       setSessions(prev =>
         prev.map(s => s.id === id
-          ? { ...s, title: form.title, date: form.date, startTime: form.startTime, endTime: form.endTime, meetLink: form.meetLink }
+          ? { ...s, title: form.title, batch: form.batch, date: form.date, startTime: form.startTime, endTime: form.endTime, meetLink: form.meetLink }
           : s
         ).sort((a, z) => a.date.localeCompare(z.date))
       );
       setEditingId(null);
-      setForm({ ...EMPTY_FORM });
+      setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch }));
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Error updating session");
     } finally {
@@ -120,16 +184,13 @@ export function MentorSessions() {
     }
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // ── Delete ──────────────────────────────────────────────────────────────────
   const handleDelete = async (id: string) => {
     if (!user) return;
     setDeletingId(id);
     try {
       const token = await user.getIdToken();
-      await fetch(`/api/sessions/${id}`, {
-        method:  "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await fetch(`/api/sessions/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       setSessions(prev => prev.filter(s => s.id !== id));
     } catch {}
     setDeletingId(null);
@@ -138,7 +199,7 @@ export function MentorSessions() {
   const startEdit = (s: Session) => {
     setEditingId(s.id);
     setCreating(false);
-    setForm({ title: s.title, programId: s.programId, date: s.date, startTime: s.startTime, endTime: s.endTime, meetLink: s.meetLink });
+    setForm({ title: s.title, programId: s.programId, batch: s.batch ?? "", date: s.date, startTime: s.startTime, endTime: s.endTime, meetLink: s.meetLink });
     setFormError("");
   };
 
@@ -151,7 +212,63 @@ export function MentorSessions() {
   const formatDate = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
 
-  // ── Shared form fields JSX ────────────────────────────────────────────────
+  // ── Attendance ──────────────────────────────────────────────────────────────
+  const openAttendance = async (session: Session) => {
+    if (attendanceOpen === session.id) {
+      setAttendanceOpen(null);
+      return;
+    }
+    setAttendanceOpen(session.id);
+
+    // Fetch existing attendance records if not already loaded
+    if (!attendanceData[session.id]) {
+      const records = await getAttendanceForSession(session.id);
+      setAttendanceData(prev => ({ ...prev, [session.id]: records }));
+      // Build draft from existing records
+      const draft: Record<string, boolean> = {};
+      // Get students for this batch
+      const batchStudents = session.batch
+        ? students.filter(r => r.enrollment.batch === session.batch)
+        : students;
+      batchStudents.forEach(r => {
+        const existing = records.find(a => a.userId === r.userProfile.uid);
+        draft[r.userProfile.uid] = existing?.present ?? false;
+      });
+      setAttendanceDraft(draft);
+    }
+  };
+
+  const saveAttendance = async (session: Session) => {
+    if (!program) return;
+    setSavingAttendance(true);
+    setAttendanceMsg(null);
+    try {
+      const batchStudents = session.batch
+        ? students.filter(r => r.enrollment.batch === session.batch)
+        : students;
+
+      await Promise.all(
+        batchStudents.map(r =>
+          upsertAttendance({
+            sessionId: session.id,
+            programId: program.id,
+            userId: r.userProfile.uid,
+            userName: r.userProfile.name,
+            present: attendanceDraft[r.userProfile.uid] ?? false,
+            date: session.date,
+          })
+        )
+      );
+      setAttendanceMsg("Attendance saved ✓");
+      setTimeout(() => setAttendanceMsg(null), 3000);
+    } catch {
+      setAttendanceMsg("Failed to save. Try again.");
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
+
+  // ── Shared form ─────────────────────────────────────────────────────────────
   const renderForm = (onSave: () => void, onCancel: () => void, submitLabel: string) => (
     <div className="p-4 md:p-5 rounded-2xl space-y-4" style={{ background: "rgba(122,140,116,0.07)", border: "1px solid rgba(122,140,116,0.2)" }}>
       {/* Title */}
@@ -160,7 +277,7 @@ export function MentorSessions() {
         <input
           value={form.title}
           onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-          placeholder="e.g. Week 1 — Breath Awareness"
+          placeholder="e.g. Morning Flow — Week 1"
           className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#F6F4EF" }}
         />
@@ -177,6 +294,31 @@ export function MentorSessions() {
         >
           {PROGRAMS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
         </select>
+      </div>
+
+      {/* Batch */}
+      <div>
+        <label className="text-xs tracking-widest uppercase mb-1.5 block" style={{ color: "rgba(246,244,239,0.45)" }}>Batch</label>
+        {program && program.batches.length > 0 ? (
+          <select
+            value={form.batch}
+            onChange={e => setForm(f => ({ ...f, batch: e.target.value }))}
+            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+            style={{ background: "rgba(40,38,36,0.95)", border: "1px solid rgba(255,255,255,0.12)", color: "#F6F4EF" }}
+          >
+            {program.batches.map(b => (
+              <option key={b.name} value={b.name}>{b.name} ({b.time})</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            value={form.batch}
+            onChange={e => setForm(f => ({ ...f, batch: e.target.value }))}
+            placeholder="e.g. Morning"
+            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#F6F4EF" }}
+          />
+        )}
       </div>
 
       {/* Date + Time */}
@@ -219,7 +361,7 @@ export function MentorSessions() {
         <input
           value={form.meetLink}
           onChange={e => setForm(f => ({ ...f, meetLink: e.target.value }))}
-          placeholder="https://meet.google.com/…"
+          placeholder="https://meet.google.com/… or https://zoom.us/…"
           className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
           style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#F6F4EF" }}
         />
@@ -263,7 +405,7 @@ export function MentorSessions() {
           My Sessions
         </motion.h2>
         <motion.button
-          onClick={() => { setCreating(c => !c); setEditingId(null); setForm({ ...EMPTY_FORM }); setFormError(""); }}
+          onClick={() => { setCreating(c => !c); setEditingId(null); setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch })); setFormError(""); }}
           className="flex items-center gap-2 px-3 md:px-4 py-2.5 rounded-xl text-xs tracking-widest uppercase"
           style={{
             background: creating ? "rgba(255,255,255,0.06)" : "#7A8C74",
@@ -293,7 +435,7 @@ export function MentorSessions() {
           >
             {renderForm(
               handleCreate,
-              () => { setCreating(false); setFormError(""); setForm({ ...EMPTY_FORM }); },
+              () => { setCreating(false); setFormError(""); setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch })); },
               "Create Session"
             )}
           </motion.div>
@@ -336,15 +478,19 @@ export function MentorSessions() {
           </p>
           {tab === "upcoming" && (
             <p className="text-xs mt-2" style={{ color: "rgba(246,244,239,0.3)" }}>
-              Click "New Session" above to schedule one.
+              Click &quot;New Session&quot; above to schedule one.
             </p>
           )}
         </motion.div>
       ) : (
         <div className="space-y-3">
           {displayed.map((s, i) => {
-            const isEditing = editingId === s.id;
-            const isToday   = s.date === today;
+            const isEditing         = editingId === s.id;
+            const isToday           = s.date === today;
+            const isAttendanceOpen  = attendanceOpen === s.id;
+            const batchStudents     = s.batch
+              ? students.filter(r => r.enrollment.batch === s.batch)
+              : students;
 
             return (
               <motion.div
@@ -356,10 +502,7 @@ export function MentorSessions() {
                 transition={{ delay: i * 0.05 }}
               >
                 {/* Card header */}
-                <div
-                  className="p-3 md:p-4"
-                  style={{ background: isToday ? "rgba(122,140,116,0.08)" : "rgba(255,255,255,0.04)" }}
-                >
+                <div className="p-3 md:p-4" style={{ background: isToday ? "rgba(122,140,116,0.08)" : "rgba(255,255,255,0.04)" }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -370,17 +513,36 @@ export function MentorSessions() {
                             Today
                           </span>
                         )}
+                        {s.batch && (
+                          <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
+                            style={{ background: "rgba(255,255,255,0.06)", color: "rgba(246,244,239,0.5)" }}>
+                            {s.batch}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs" style={{ color: "rgba(246,244,239,0.4)" }}>
                         {formatDate(s.date)} · {s.startTime}–{s.endTime}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: "rgba(246,244,239,0.3)" }}>
-                        {PROGRAMS.find(p => p.id === s.programId)?.label ?? s.programId}
                       </p>
                     </div>
 
                     {/* Action buttons */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {/* Attendance button — only for past sessions */}
+                      {tab === "past" && (
+                        <motion.button
+                          onClick={() => openAttendance(s)}
+                          className="p-2 rounded-lg"
+                          style={{
+                            background: isAttendanceOpen ? "rgba(122,140,116,0.2)" : "rgba(255,255,255,0.06)",
+                            color: isAttendanceOpen ? "#7A8C74" : "rgba(246,244,239,0.5)",
+                          }}
+                          title="Mark attendance"
+                          whileHover={{ background: "rgba(122,140,116,0.15)" }}
+                          whileTap={{ scale: 0.92 }}
+                        >
+                          <Users size={12} />
+                        </motion.button>
+                      )}
                       <motion.button
                         onClick={() => copyLink(s.meetLink, s.id)}
                         className="p-2 rounded-lg"
@@ -393,7 +555,6 @@ export function MentorSessions() {
                           ? <span style={{ fontSize: "10px", color: "#7A8C74" }}>✓</span>
                           : <Copy size={12} />}
                       </motion.button>
-
                       <a href={s.meetLink} target="_blank" rel="noopener noreferrer">
                         <motion.button
                           className="p-2 rounded-lg"
@@ -405,10 +566,9 @@ export function MentorSessions() {
                           <ExternalLink size={12} />
                         </motion.button>
                       </a>
-
                       <motion.button
                         onClick={() => {
-                          if (isEditing) { setEditingId(null); setForm({ ...EMPTY_FORM }); }
+                          if (isEditing) { setEditingId(null); setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch })); }
                           else startEdit(s);
                         }}
                         className="p-2 rounded-lg"
@@ -422,7 +582,6 @@ export function MentorSessions() {
                       >
                         <Edit2 size={12} />
                       </motion.button>
-
                       <motion.button
                         onClick={() => handleDelete(s.id)}
                         disabled={deletingId === s.id}
@@ -432,9 +591,7 @@ export function MentorSessions() {
                         whileHover={{ background: "rgba(192,64,64,0.2)" }}
                         whileTap={{ scale: 0.92 }}
                       >
-                        {deletingId === s.id
-                          ? <span style={{ fontSize: "10px" }}>…</span>
-                          : <Trash2 size={12} />}
+                        {deletingId === s.id ? <span style={{ fontSize: "10px" }}>…</span> : <Trash2 size={12} />}
                       </motion.button>
                     </div>
                   </div>
@@ -454,9 +611,80 @@ export function MentorSessions() {
                       <div className="p-3 md:p-4">
                         {renderForm(
                           () => handleEdit(s.id),
-                          () => { setEditingId(null); setForm({ ...EMPTY_FORM }); setFormError(""); },
+                          () => { setEditingId(null); setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch })); setFormError(""); },
                           "Save Changes"
                         )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Attendance panel */}
+                <AnimatePresence>
+                  {isAttendanceOpen && (
+                    <motion.div
+                      key="attendance"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                      style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                    >
+                      <div className="p-4 md:p-5 space-y-3" style={{ background: "rgba(122,140,116,0.04)" }}>
+                        <p className="text-xs tracking-widest uppercase" style={{ color: "#7A8C74" }}>
+                          Mark Attendance — {s.batch ?? "All Students"}
+                        </p>
+                        {batchStudents.length === 0 ? (
+                          <p className="text-xs" style={{ color: "rgba(246,244,239,0.3)" }}>
+                            No students in this batch.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {batchStudents.map(row => (
+                              <div key={row.userProfile.uid} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)" }}>
+                                <p className="text-sm" style={{ color: "#F6F4EF" }}>{row.userProfile.name}</p>
+                                <div className="flex items-center gap-2">
+                                  {["Present", "Absent"].map(label => (
+                                    <motion.button
+                                      key={label}
+                                      onClick={() => setAttendanceDraft(d => ({ ...d, [row.userProfile.uid]: label === "Present" }))}
+                                      className="px-3 py-1 rounded-lg text-xs"
+                                      animate={{
+                                        background: (attendanceDraft[row.userProfile.uid] ?? false) === (label === "Present")
+                                          ? (label === "Present" ? "rgba(122,140,116,0.3)" : "rgba(192,64,64,0.2)")
+                                          : "rgba(255,255,255,0.05)",
+                                        color: (attendanceDraft[row.userProfile.uid] ?? false) === (label === "Present")
+                                          ? (label === "Present" ? "#7A8C74" : "#c04040")
+                                          : "rgba(246,244,239,0.4)",
+                                      }}
+                                      whileHover={{ opacity: 0.8 }}
+                                      whileTap={{ scale: 0.95 }}
+                                    >
+                                      {label}
+                                    </motion.button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 pt-1">
+                          <motion.button
+                            onClick={() => saveAttendance(s)}
+                            disabled={savingAttendance}
+                            className="px-5 py-2.5 rounded-xl text-xs tracking-widest uppercase"
+                            style={{ background: "#7A8C74", color: "#F6F4EF", minHeight: "38px" }}
+                            whileHover={{ background: "#6a7c64" }}
+                            whileTap={{ scale: 0.97 }}
+                          >
+                            {savingAttendance ? "Saving…" : "Save Attendance"}
+                          </motion.button>
+                          {attendanceMsg && (
+                            <p className="text-xs" style={{ color: attendanceMsg.includes("✓") ? "#7A8C74" : "#c04040" }}>
+                              {attendanceMsg}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   )}

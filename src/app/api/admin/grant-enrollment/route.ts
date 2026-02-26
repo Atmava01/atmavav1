@@ -8,19 +8,13 @@
  *   Content-Type: application/json
  *
  * Body:
- *   { userId: string, programId: string, durationDays?: number, startDate?: string }
+ *   { userId: string, programId: string, durationDays?: number, startDate?: string, level?: string, batch?: string }
  *
  * Response:
  *   { success: true, enrollmentId: string }
  */
 import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebaseToken, adminDb } from "@/lib/firebaseAdmin";
-
-const PROGRAM_TITLE_MAP: Record<string, string> = {
-  "30": "30 Days — Foundation",
-  "60": "60 Days — Deepening",
-  "90": "90 Days — Inner Mastery",
-};
 
 export async function POST(req: NextRequest) {
   const callerUid = await verifyFirebaseToken(req);
@@ -35,11 +29,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden — admin role required." }, { status: 403 });
   }
 
-  let body: { userId?: string; programId?: string; durationDays?: number; startDate?: string };
+  let body: {
+    userId?: string;
+    programId?: string;
+    durationDays?: number;
+    startDate?: string;
+    level?: string;
+    batch?: string;
+  };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
-  const { userId, programId, durationDays, startDate } = body;
+  const { userId, programId, durationDays, startDate, level = "", batch = "" } = body;
   if (!userId || !programId) {
     return NextResponse.json({ error: "Missing required fields: userId, programId." }, { status: 400 });
   }
@@ -49,6 +50,14 @@ export async function POST(req: NextRequest) {
   if (!userSnap.exists) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
+
+  // Fetch program data from Firestore for title + duration
+  const programDoc  = await db.collection("programs").doc(programId).get();
+  const programData = programDoc.data();
+  const duration    = durationDays ?? programData?.duration ?? Number(programId) ?? 30;
+  const programTitle = programData?.title
+    ? `${programId} Days — ${programData.title}`
+    : programId;
 
   // Check for existing active enrollment
   const nowIso = new Date().toISOString();
@@ -69,14 +78,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Compute dates
-  const duration = durationDays ?? Number(programId) ?? 30;
   const start = startDate ?? new Date().toISOString().split("T")[0];
   const startDateObj = new Date(start + "T00:00:00Z");
   const endDateObj = new Date(startDateObj);
   endDateObj.setDate(endDateObj.getDate() + duration);
   const endDate = endDateObj.toISOString().split("T")[0];
 
-  // Create enrollment
+  // Create enrollment with level, batch, remainingDays
   const enrollmentRef = await db.collection("enrollments").add({
     userId,
     programId,
@@ -84,6 +92,9 @@ export async function POST(req: NextRequest) {
     status:         "active",
     startDate:      start,
     endDate,
+    level,
+    batch,
+    remainingDays:  duration,
     createdAt:      new Date().toISOString(),
     grantedByAdmin: true,
   });
@@ -91,8 +102,9 @@ export async function POST(req: NextRequest) {
   // Update user profile
   await db.collection("users").doc(userId).update({
     programId,
-    programTitle:     PROGRAM_TITLE_MAP[programId] ?? programId,
+    programTitle,
     programStartDate: start,
+    currentDay:       1,
   });
 
   return NextResponse.json({ success: true, enrollmentId: enrollmentRef.id });

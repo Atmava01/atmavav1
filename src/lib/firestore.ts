@@ -6,29 +6,14 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
-  UserProfile, Booking, Message, CheckIn, Program, Resource, Payment,
-  Enrollment, Session,
+  UserProfile, Program, Resource, Payment,
+  Enrollment, Session, Attendance,
 } from "@/types";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-export function generateMeetLink(): string {
-  const letters = "abcdefghijklmnopqrstuvwxyz";
-  const seg = (n: number) =>
-    Array.from({ length: n }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
-  return `https://meet.google.com/${seg(3)}-${seg(4)}-${seg(3)}`;
-}
-
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
-}
-
-function levelFromXP(xp: number): string {
-  if (xp >= 5000) return "Integrated";
-  if (xp >= 2500) return "Embodied";
-  if (xp >= 1000) return "Practitioner";
-  if (xp >= 300) return "Seeker";
-  return "Beginner";
 }
 
 function programTitle(id: string | null): string {
@@ -54,14 +39,7 @@ export async function createUserProfile(uid: string, data: Partial<UserProfile>)
     programTitle: null,
     programStartDate: null,
     currentDay: 1,
-    xp: 0,
-    level: "Beginner",
-    streakCount: 0,
-    lastCheckIn: null,
-    badges: [],
     createdAt: new Date().toISOString(),
-    mentorId: null,
-    mentorName: null,
   });
 }
 
@@ -98,168 +76,17 @@ export async function setUserRole(uid: string, role: UserProfile["role"]): Promi
   await updateDoc(doc(db, "users", uid), { role });
 }
 
-export async function assignMentorToUser(userId: string, mentorId: string, mentorName: string): Promise<void> {
-  await updateDoc(doc(db, "users", userId), { mentorId, mentorName });
-}
-
-export async function enrollUserInProgram(
-  uid: string,
-  programId: string
-): Promise<void> {
-  await updateDoc(doc(db, "users", uid), {
-    programId,
-    programTitle: programTitle(programId),
-    programStartDate: todayStr(),
-    currentDay: 1,
-    xp: 0,
-    level: "Beginner",
-    streakCount: 0,
-    lastCheckIn: null,
-    badges: [],
-  });
-  // Increment enrolled count
-  const pgRef = doc(db, "programs", programId);
-  const pgSnap = await getDoc(pgRef);
-  if (pgSnap.exists()) {
-    const curr = pgSnap.data().enrolledCount ?? 0;
-    await updateDoc(pgRef, { enrolledCount: curr + 1 });
-  }
-}
-
-// ─── Check-Ins (Practice Tracker) ───────────────────────────────────────────
-
-export async function checkInToday(uid: string, userProfile: UserProfile): Promise<{ xpEarned: number; newStreak: number }> {
-  const today = todayStr();
-  const checkInId = `${uid}_${today}`;
-  const existing = await getDoc(doc(db, "checkIns", checkInId));
-  if (existing.exists()) return { xpEarned: 0, newStreak: userProfile.streakCount };
-
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
-
-  const isConsecutive = userProfile.lastCheckIn === yesterdayStr;
-  const newStreak = isConsecutive ? userProfile.streakCount + 1 : 1;
-  const xpEarned = 10 + (newStreak % 7 === 0 ? 20 : 0); // Bonus on 7-day multiples
-
-  // Determine new badges
-  const newBadges = [...(userProfile.badges ?? [])];
-  if (newStreak === 7 && !newBadges.includes("7-Day Flame")) newBadges.push("7-Day Flame");
-  if (newStreak === 14 && !newBadges.includes("Fortnight Seeker")) newBadges.push("Fortnight Seeker");
-  if (newStreak === 30 && !newBadges.includes("30-Day Master")) newBadges.push("30-Day Master");
-
-  const newXP = (userProfile.xp ?? 0) + xpEarned;
-  const newCurrentDay = Math.min((userProfile.currentDay ?? 1) + 1, Number(userProfile.programId ?? 30));
-
-  await setDoc(doc(db, "checkIns", checkInId), {
-    id: checkInId, uid, date: today, xpEarned, timestamp: Date.now(),
-  });
-
-  await updateDoc(doc(db, "users", uid), {
-    lastCheckIn: today,
-    streakCount: newStreak,
-    xp: newXP,
-    level: levelFromXP(newXP),
-    badges: newBadges,
-    currentDay: newCurrentDay,
-  });
-
-  return { xpEarned, newStreak };
-}
-
-export async function getCheckInsForMonth(uid: string, year: number, month: number): Promise<string[]> {
-  const start = `${year}-${String(month).padStart(2, "0")}-01`;
-  const end = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const q = query(
-    collection(db, "checkIns"),
-    where("uid", "==", uid),
-    where("date", ">=", start),
-    where("date", "<", end)
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data().date as string);
-}
-
-// ─── Bookings ────────────────────────────────────────────────────────────────
-
-export async function createBooking(data: Omit<Booking, "id">): Promise<string> {
-  const ref = await addDoc(collection(db, "bookings"), {
-    ...data,
-    meetLink: generateMeetLink(),
-    status: "confirmed",
-    reminderSent24h: false,
-    reminderSent1h: false,
-    createdAt: new Date().toISOString(),
-  });
-  return ref.id;
-}
-
-export async function getUserBookings(uid: string): Promise<Booking[]> {
-  const q = query(collection(db, "bookings"), where("userId", "==", uid), orderBy("date", "asc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
-}
-
-export async function getMentorBookings(mentorId: string): Promise<Booking[]> {
-  const q = query(collection(db, "bookings"), where("mentorId", "==", mentorId), orderBy("date", "asc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
-}
-
-export async function getAllBookings(): Promise<Booking[]> {
-  const q = query(collection(db, "bookings"), orderBy("date", "desc"), limit(100));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
-}
-
-export async function updateBookingStatus(id: string, status: Booking["status"]): Promise<void> {
-  await updateDoc(doc(db, "bookings", id), { status });
-}
-
-// ─── Messages ────────────────────────────────────────────────────────────────
-
-export async function getOrCreateConversation(userId: string, mentorId: string, names: Record<string, string>): Promise<string> {
-  const convId = [userId, mentorId].sort().join("_");
-  const ref = doc(db, "conversations", convId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    await setDoc(ref, {
-      id: convId,
-      participants: [userId, mentorId],
-      participantNames: names,
-      lastMessage: "",
-      lastMessageAt: Date.now(),
-      unreadCount: 0,
-    });
-  }
-  return convId;
-}
-
-export async function sendMessage(convId: string, senderId: string, senderName: string, text: string): Promise<void> {
-  await addDoc(collection(db, "conversations", convId, "messages"), {
-    senderId, senderName, text, timestamp: Date.now(), read: false,
-  });
-  await updateDoc(doc(db, "conversations", convId), {
-    lastMessage: text, lastMessageAt: Date.now(),
-  });
-}
-
-export function subscribeMessages(convId: string, cb: (msgs: Message[]) => void) {
-  const q = query(
-    collection(db, "conversations", convId, "messages"),
-    orderBy("timestamp", "asc"),
-    limit(100)
-  );
-  return onSnapshot(q, (snap) => {
-    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Message)));
-  });
-}
-
 // ─── Programs ────────────────────────────────────────────────────────────────
 
 export async function getPrograms(): Promise<Program[]> {
   const snap = await getDocs(collection(db, "programs"));
   return snap.docs.map((d) => d.data() as Program);
+}
+
+export async function getProgramById(programId: string): Promise<Program | null> {
+  const snap = await getDoc(doc(db, "programs", programId));
+  if (!snap.exists()) return null;
+  return snap.data() as Program;
 }
 
 export async function upsertProgram(program: Program): Promise<void> {
@@ -270,36 +97,57 @@ export async function seedPrograms(): Promise<void> {
   const defaultPrograms: Program[] = [
     {
       id: "30",
-      title: "30 Days — Foundation",
+      title: "Foundation",
       duration: 30,
       description: "Ground yourself in daily practice. Learn to observe the mind, establish stillness rituals, and build an unshakeable base.",
-      price: 999,
+      price: 14900,
       isActive: true,
       isFree: false,
-      features: ["30 guided audio practices", "Weekly live sessions", "Daily journaling prompts", "XP & streak tracking", "Community access"],
+      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
       enrolledCount: 0,
+      mentorId: null,
+      mentorName: null,
+      batches: [
+        { name: "Morning", time: "6:30 AM" },
+        { name: "Evening", time: "6:00 PM" },
+      ],
+      levels: ["Beginner", "Intermediate", "Advanced"],
     },
     {
       id: "60",
-      title: "60 Days — Deepening",
+      title: "Deepening",
       duration: 60,
       description: "Move beyond the surface. Dissolve conditioning, integrate shadow work, and cultivate a living relationship with awareness.",
-      price: 2999,
+      price: 27900,
       isActive: true,
       isFree: false,
-      features: ["60 practices + advanced sessions", "Bi-weekly 1:1 mentorship", "Shadow work framework", "Somatic practices", "XP double gains"],
+      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
       enrolledCount: 0,
+      mentorId: null,
+      mentorName: null,
+      batches: [
+        { name: "Morning", time: "6:30 AM" },
+        { name: "Evening", time: "6:00 PM" },
+      ],
+      levels: ["Beginner", "Intermediate", "Advanced"],
     },
     {
       id: "90",
-      title: "90 Days — Inner Mastery",
+      title: "Inner Mastery",
       duration: 90,
       description: "The complete Atmava immersion. Three months of structured transformation across all layers.",
-      price: 8999,
+      price: 44900,
       isActive: true,
       isFree: false,
-      features: ["90 premium practices", "Weekly 1:1 mentor sessions", "Full resource library", "Lifetime community access", "Inner Mastery certification"],
+      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
       enrolledCount: 0,
+      mentorId: null,
+      mentorName: null,
+      batches: [
+        { name: "Morning", time: "6:30 AM" },
+        { name: "Evening", time: "6:00 PM" },
+      ],
+      levels: ["Beginner", "Intermediate", "Advanced"],
     },
   ];
   for (const p of defaultPrograms) {
@@ -325,30 +173,12 @@ export async function deleteResource(id: string): Promise<void> {
   await deleteDoc(doc(db, "resources", id));
 }
 
-// ─── Mentor helpers ───────────────────────────────────────────────────────────
-
-export async function getMentorStudents(mentorId: string): Promise<UserProfile[]> {
-  const q = query(collection(db, "users"), where("mentorId", "==", mentorId));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as UserProfile);
-}
-
-export async function getConversationsForUser(uid: string) {
-  const q = query(
-    collection(db, "conversations"),
-    where("participants", "array-contains", uid),
-    orderBy("lastMessageAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
 // ─── Enrollments ─────────────────────────────────────────────────────────────
 
 /** Returns the user's active enrollment, or null if none/expired.
  *  Filters endDate in JS (YYYY-MM-DD comparison) to avoid composite index requirement. */
 export async function getActiveEnrollment(userId: string): Promise<Enrollment | null> {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const today = new Date().toISOString().split("T")[0];
   const q = query(
     collection(db, "enrollments"),
     where("userId", "==", userId),
@@ -356,7 +186,6 @@ export async function getActiveEnrollment(userId: string): Promise<Enrollment | 
   );
   const snap = await getDocs(q);
   if (snap.empty) return null;
-  // Filter in JS: endDate must be today or in the future
   const active = snap.docs
     .map(d => ({ id: d.id, ...d.data() } as Enrollment))
     .find(e => e.endDate >= today);
@@ -402,6 +231,83 @@ export async function extendEnrollment(enrollmentId: string, newEndDate: string)
   });
 }
 
+/** Create a new enrollment document. Used by payment verify route + admin panel. */
+export async function createEnrollment(data: {
+  userId: string;
+  programId: string;
+  paymentId: string | null;
+  grantedByAdmin: boolean;
+  durationDays: number;
+  level: string;
+  batch: string;
+  remainingDays: number;
+}): Promise<string> {
+  const now = new Date();
+  const startDate = now.toISOString().split("T")[0];
+  const endDateObj = new Date(now);
+  endDateObj.setDate(endDateObj.getDate() + data.durationDays);
+  const endDate = endDateObj.toISOString().split("T")[0];
+
+  const ref = await addDoc(collection(db, "enrollments"), {
+    userId: data.userId,
+    programId: data.programId,
+    paymentId: data.paymentId,
+    status: "active",
+    startDate,
+    endDate,
+    createdAt: now.toISOString(),
+    grantedByAdmin: data.grantedByAdmin,
+    level: data.level,
+    batch: data.batch,
+    remainingDays: data.remainingDays,
+  });
+
+  // Update user profile with program info
+  await updateDoc(doc(db, "users", data.userId), {
+    programId: data.programId,
+    programTitle: programTitle(data.programId),
+    programStartDate: startDate,
+    currentDay: 1,
+  });
+
+  // Increment enrolled count on program
+  const pgRef = doc(db, "programs", data.programId);
+  const pgSnap = await getDoc(pgRef);
+  if (pgSnap.exists()) {
+    const curr = pgSnap.data().enrolledCount ?? 0;
+    await updateDoc(pgRef, { enrolledCount: curr + 1 });
+  }
+
+  return ref.id;
+}
+
+// ─── Students (by program) ────────────────────────────────────────────────────
+
+/** Returns all active-enrollment students for a program, with their user profiles. */
+export async function getStudentsForProgram(
+  programId: string
+): Promise<{ enrollment: Enrollment; userProfile: UserProfile }[]> {
+  const q = query(
+    collection(db, "enrollments"),
+    where("programId", "==", programId),
+    where("status", "==", "active")
+  );
+  const snap = await getDocs(q);
+  const enrollments = snap.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment));
+
+  const results = await Promise.all(
+    enrollments.map(async (enrollment) => {
+      const userSnap = await getDoc(doc(db, "users", enrollment.userId));
+      if (!userSnap.exists()) return null;
+      return { enrollment, userProfile: userSnap.data() as UserProfile };
+    })
+  );
+
+  return results
+    .filter((r): r is { enrollment: Enrollment; userProfile: UserProfile } => r !== null)
+    .sort((a, b) => (a.userProfile.name ?? "").localeCompare(b.userProfile.name ?? ""));
+}
+
 // ─── Payments ─────────────────────────────────────────────────────────────────
 
 /** Admin — fetches recent payments ordered by date. */
@@ -417,7 +323,7 @@ export async function getPaymentsAdmin(limitCount = 100): Promise<Payment[]> {
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 
-/** Returns upcoming sessions for a program (today onwards), sorted in JS to avoid composite index. */
+/** Returns upcoming sessions for a program (today onwards), sorted by date. */
 export async function getUpcomingSessionsForProgram(programId: string): Promise<Session[]> {
   const today = todayStr();
   const q = query(
@@ -432,7 +338,23 @@ export async function getUpcomingSessionsForProgram(programId: string): Promise<
     .slice(0, 20);
 }
 
-/** Returns all sessions for a program (past + upcoming), sorted by date in JS. */
+/** Returns upcoming sessions for a program filtered by batch, sorted by date. */
+export async function getUpcomingSessionsForBatch(programId: string, batch: string): Promise<Session[]> {
+  const today = todayStr();
+  const q = query(
+    collection(db, "sessions"),
+    where("programId", "==", programId),
+    where("batch", "==", batch)
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Session))
+    .filter(s => s.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 20);
+}
+
+/** Returns all sessions for a program (past + upcoming), sorted by date. */
 export async function getSessionsForProgram(programId: string): Promise<Session[]> {
   const q = query(
     collection(db, "sessions"),
@@ -444,7 +366,7 @@ export async function getSessionsForProgram(programId: string): Promise<Session[
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** Returns all sessions created by a mentor, sorted by date in JS. */
+/** Returns all sessions created by a mentor, sorted by date. */
 export async function getSessionsByMentor(mentorId: string): Promise<Session[]> {
   const q = query(
     collection(db, "sessions"),
@@ -456,38 +378,70 @@ export async function getSessionsByMentor(mentorId: string): Promise<Session[]> 
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+/** Create or update an attendance record. Doc ID = {sessionId}_{userId} */
+export async function upsertAttendance(
+  data: Omit<Attendance, "id" | "createdAt">
+): Promise<void> {
+  const id = `${data.sessionId}_${data.userId}`;
+  await setDoc(doc(db, "attendance", id), {
+    ...data,
+    id,
+    createdAt: new Date().toISOString(),
+  }, { merge: true });
+}
+
+/** Get all attendance records for a session. */
+export async function getAttendanceForSession(sessionId: string): Promise<Attendance[]> {
+  const q = query(
+    collection(db, "attendance"),
+    where("sessionId", "==", sessionId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => d.data() as Attendance);
+}
+
+/** Get attendance history for a user in a program (most recent first). */
+export async function getAttendanceForUser(
+  userId: string,
+  programId: string,
+  limitCount = 20
+): Promise<Attendance[]> {
+  const q = query(
+    collection(db, "attendance"),
+    where("userId", "==", userId),
+    where("programId", "==", programId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map(d => d.data() as Attendance)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limitCount);
+}
+
 // ─── Admin Analytics ─────────────────────────────────────────────────────────
 
 export async function getAdminStats() {
-  const [usersSnap, bookingsSnap, checkInsSnap, enrollmentsSnap] = await Promise.all([
+  const today = todayStr();
+  const in7days = new Date();
+  in7days.setDate(in7days.getDate() + 7);
+  const in7str = in7days.toISOString().split("T")[0];
+
+  const [usersSnap, activeEnrollSnap, programsSnap, sessionsSnap] = await Promise.all([
     getDocs(collection(db, "users")),
-    getDocs(collection(db, "bookings")),
-    getDocs(collection(db, "checkIns")),
     getDocs(query(collection(db, "enrollments"), where("status", "==", "active"))),
+    getDocs(collection(db, "programs")),
+    getDocs(collection(db, "sessions")),
   ]);
 
-  const users = usersSnap.docs.map((d) => d.data() as UserProfile);
-  const bookings = bookingsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking));
-
-  const last7days = new Date();
-  last7days.setDate(last7days.getDate() - 7);
-  const last7str = last7days.toISOString().split("T")[0];
-
-  const activeUsers = users.filter((u) => u.lastCheckIn && u.lastCheckIn >= last7str).length;
-  const totalXP = users.reduce((a, u) => a + (u.xp ?? 0), 0);
-  const programCounts: Record<string, number> = { "30": 0, "60": 0, "90": 0 };
-  users.forEach((u) => { if (u.programId) programCounts[u.programId] = (programCounts[u.programId] ?? 0) + 1; });
-  const completedSessions = bookings.filter((b) => b.status === "completed").length;
+  const allSessions = sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Session));
+  const upcomingSessions = allSessions.filter(s => s.date >= today && s.date <= in7str).length;
 
   return {
-    totalUsers: users.length,
-    activeUsers,
-    activeEnrollments: enrollmentsSnap.size,
-    totalCheckIns: checkInsSnap.size,
-    completedSessions,
-    totalXP,
-    programCounts,
-    recentUsers: users.slice(0, 5),
-    recentBookings: bookings.slice(0, 5),
+    totalUsers: usersSnap.size,
+    activeEnrollments: activeEnrollSnap.size,
+    totalPrograms: programsSnap.size,
+    upcomingSessions,
   };
 }

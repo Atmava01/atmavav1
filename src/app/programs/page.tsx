@@ -25,13 +25,12 @@ const programs = [
       { day: "Day 22–30", title: "Integration", desc: "Bring awareness into daily life. Review and anchor." },
     ],
     includes: [
-      "30 guided audio practices",
-      "Daily live group sessions",
+      "Live daily sessions (Mon–Sat)",
+      "Morning & Evening batches",
       "Daily journaling prompts",
-      "XP & streak tracking",
+      "Mentor guidance",
       "Community access",
     ],
-    badge: "Seeker",
   },
   {
     days: "60",
@@ -49,13 +48,12 @@ const programs = [
       { day: "Week 7–8", title: "Non-Dual Inquiry", desc: "Who is aware? Self-inquiry and open presence." },
     ],
     includes: [
-      "60 practices + advanced sessions",
-      "Bi-weekly 1:1 mentorship",
+      "Live daily sessions (Mon–Sat)",
+      "Morning & Evening batches",
+      "Weekly 1:1 mentor check-in",
       "Shadow work framework",
       "Somatic practices",
-      "XP double gains + exclusive badges",
     ],
-    badge: "Practitioner",
   },
   {
     days: "90",
@@ -71,14 +69,12 @@ const programs = [
       { day: "Month 3", title: "Embodiment", desc: "Living the practice. Teaching others. Being the stillness." },
     ],
     includes: [
-      "90 premium practices",
+      "Live daily sessions (Mon–Sat)",
+      "Morning & Evening batches",
       "Weekly 1:1 mentor sessions",
       "Full resource library",
       "Lifetime community access",
-      "Inner Mastery certification",
-      "Exclusive XP & badge collection",
     ],
-    badge: "Master",
   },
 ];
 
@@ -211,23 +207,6 @@ function ProgramCard({ prog, i, onEnroll, enrolled }: { prog: Program; i: number
                         <span className="text-sm" style={{ color: "#7A7771" }}>{item}</span>
                       </motion.div>
                     ))}
-                  </div>
-
-                  {/* Badge preview */}
-                  <div
-                    className="p-4 rounded-xl mb-8 flex items-center gap-4"
-                    style={{ background: "rgba(92,107,87,0.05)", border: "1px solid rgba(92,107,87,0.15)" }}
-                  >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs tracking-widest"
-                      style={{ background: "#5C6B57", color: "#F6F4EF" }}
-                    >
-                      ✦
-                    </div>
-                    <div>
-                      <p className="text-xs tracking-widest uppercase" style={{ color: "#5C6B57" }}>Earn the Badge</p>
-                      <p className="text-sm" style={{ color: "#2C2B29" }}>{prog.badge}</p>
-                    </div>
                   </div>
 
                   <motion.button

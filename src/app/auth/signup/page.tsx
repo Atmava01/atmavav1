@@ -100,21 +100,30 @@ function SignupInner() {
     } finally { setLoading(false); }
   };
 
+  const formatOAuthError = (code: string) => {
+    const map: Record<string, string> = {
+      "auth/popup-closed-by-user":    "Sign-in cancelled.",
+      "auth/cancelled-popup-request": "Sign-in cancelled.",
+      "auth/popup-blocked":           "Pop-up blocked. Please allow pop-ups for this site and try again.",
+      "auth/unauthorized-domain":     "This domain isn't authorised. Add it in Firebase Console → Authentication → Authorized domains.",
+      "auth/operation-not-allowed":   "This sign-in method is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.",
+      "auth/network-request-failed":  "Network error. Check your connection.",
+      "auth/account-exists-with-different-credential": "An account already exists with this email using a different sign-in method.",
+    };
+    return map[code] ?? `Sign-in failed (${code || "unknown"}). Please try again.`;
+  };
+
   const handleGoogleSignup = async () => {
     setError(""); setLoading(true);
-    try {
-      await signInWithGoogle();
-      afterAuth();
-    } catch { setError("Google sign-in failed. Please try again."); }
+    try { await signInWithGoogle(); afterAuth(); }
+    catch (err: unknown) { setError(formatOAuthError((err as { code?: string }).code ?? "")); }
     finally { setLoading(false); }
   };
 
   const handleAppleSignup = async () => {
     setError(""); setLoading(true);
-    try {
-      await signInWithApple();
-      afterAuth();
-    } catch { setError("Apple sign-in failed. Please try again."); }
+    try { await signInWithApple(); afterAuth(); }
+    catch (err: unknown) { setError(formatOAuthError((err as { code?: string }).code ?? "")); }
     finally { setLoading(false); }
   };
 

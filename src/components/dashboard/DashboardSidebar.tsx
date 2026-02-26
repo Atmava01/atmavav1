@@ -4,17 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, BookOpen, Calendar, Star, MessageSquare, FolderOpen, LogOut, Shield, X, Video } from "lucide-react";
+import { Home, Video, LogOut, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  { icon: Home,          label: "Overview",      id: "overview"  },
-  { icon: BookOpen,      label: "My Program",    id: "program"   },
-  { icon: Video,         label: "Sessions",      id: "sessions"  },
-  { icon: Calendar,      label: "Practice",      id: "practice"  },
-  { icon: Star,          label: "Rewards",       id: "rewards"   },
-  { icon: MessageSquare, label: "Messages",      id: "messages"  },
-  { icon: FolderOpen,    label: "Resources",     id: "resources" },
+  { icon: Home,  label: "Overview",  id: "overview"  },
+  { icon: Video, label: "Sessions",  id: "sessions"  },
 ];
 
 interface Props {
@@ -125,23 +120,6 @@ export function DashboardSidebar({ active, setActive, mobileOpen, setMobileOpen 
               );
             })}
 
-            {(userProfile?.role === "admin" || userProfile?.role === "mentor") && (
-              <>
-                <div className="my-3 mx-1" style={{ borderTop: "1px solid #D4CCBF" }} />
-                <Link href={userProfile.role === "admin" ? "/admin" : "/mentor"}>
-                  <motion.div
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-                    whileHover={{ background: "rgba(92,107,87,0.08)" }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    <Shield size={14} style={{ color: "#5C6B57" }} />
-                    <span className="text-xs md:text-sm" style={{ color: "#5C6B57" }}>
-                      {userProfile.role === "admin" ? "Admin Panel" : "Mentor Portal"}
-                    </span>
-                  </motion.div>
-                </Link>
-              </>
-            )}
           </div>
         </nav>
 
@@ -160,8 +138,7 @@ export function DashboardSidebar({ active, setActive, mobileOpen, setMobileOpen 
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-xs truncate" style={{ color: "#2C2B29" }}>{userProfile?.name ?? "Seeker"}</p>
-                <p className="text-xs" style={{ color: "#7A7771" }}>{userProfile?.level} · {userProfile?.xp ?? 0} XP</p>
+                <p className="text-xs truncate" style={{ color: "#2C2B29" }}>{userProfile?.name ?? "Member"}</p>
               </div>
             </div>
             <motion.button

@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart2, Users, Calendar, MessageSquare, LogOut, LayoutDashboard, Menu, X } from "lucide-react";
+import { BarChart2, Users, Calendar, LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  { icon: BarChart2,      label: "Overview",    id: "overview"  },
-  { icon: Users,          label: "My Students", id: "students"  },
-  { icon: Calendar,       label: "Sessions",    id: "sessions"  },
-  { icon: MessageSquare,  label: "Messages",    id: "messages"  },
+  { icon: BarChart2, label: "Overview",    id: "overview"  },
+  { icon: Users,     label: "My Students", id: "students"  },
+  { icon: Calendar,  label: "Sessions",    id: "sessions"  },
 ];
 
 interface Props { active: string; setActive: (id: string) => void; }
@@ -163,13 +161,7 @@ export function MentorSidebar({ active, setActive }: Props) {
 
         {/* Bottom */}
         <div className="px-3 pb-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-          <div className="pt-4 px-3 space-y-2">
-            <Link href="/dashboard">
-              <motion.div className="flex items-center gap-2 py-2" whileHover={{ opacity: 0.7 }}>
-                <LayoutDashboard size={13} style={{ color: "rgba(246,244,239,0.5)" }} />
-                <span className="text-xs tracking-widest uppercase" style={{ color: "rgba(246,244,239,0.5)" }}>My Dashboard</span>
-              </motion.div>
-            </Link>
+          <div className="pt-4 px-3">
             <motion.button className="flex items-center gap-2" whileHover={{ opacity: 0.7 }} onClick={handleSignOut}>
               <LogOut size={13} style={{ color: "rgba(246,244,239,0.5)" }} />
               <span className="text-xs tracking-widest uppercase" style={{ color: "rgba(246,244,239,0.5)" }}>Sign Out</span>

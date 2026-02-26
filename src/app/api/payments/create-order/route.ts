@@ -18,29 +18,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebaseToken, adminDb } from "@/lib/firebaseAdmin";
 import { getRazorpayInstance, getRazorpayKeyId, getRazorpayMode, generateReceiptId } from "@/lib/razorpay";
 
-/**
- * Server-side price table in INR. Price is NEVER trusted from the client.
- * Update here when pricing changes.
- */
-const PROGRAM_PRICES: Record<string, number> = {
-  "30": 149,
-  "60": 279,
-  "90": 449,
-};
-
 export async function POST(req: NextRequest) {
-  // ── 1. Authenticate ───────────────────────────────────────────────────────
-  const uid = await verifyFirebaseToken(req);
-  if (!uid) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  // ── 1. Guard: Admin SDK must be initialised ───────────────────────────────
   if (!adminDb) {
-    return NextResponse.json({ error: "Server not configured." }, { status: 500 });
+    console.error("[create-order] Firebase Admin SDK not initialised — check FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY in .env.local and restart the dev server.");
+    return NextResponse.json({ error: "Server not configured. Please contact support." }, { status: 500 });
   }
   const db = adminDb; // narrowed — safe inside async callbacks
 
-  // ── 2. Parse body ─────────────────────────────────────────────────────────
+  // ── 2. Authenticate ───────────────────────────────────────────────────────
+  const uid = await verifyFirebaseToken(req);
+  if (!uid) {
+    return NextResponse.json({ error: "Unauthorized — invalid or expired token." }, { status: 401 });
+  }
+
+  // ── 3. Parse body ─────────────────────────────────────────────────────────
   let body: { programId?: string };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
@@ -50,12 +42,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing programId." }, { status: 400 });
   }
 
-  // ── 3. Validate program and resolve price server-side ─────────────────────
-  const priceINR = PROGRAM_PRICES[programId];
-  if (!priceINR) {
+  // ── 4. Fetch program and resolve price from Firestore ─────────────────────
+  const programDoc  = await db.collection("programs").doc(programId).get();
+  if (!programDoc.exists) {
     return NextResponse.json({ error: "Program not found." }, { status: 404 });
   }
-  const amountPaise = priceINR * 100; // Razorpay uses smallest currency unit
+  const programData = programDoc.data();
+  // Price stored in paise (INR × 100). Never trusted from client.
+  const amountPaise = programData?.price as number | undefined;
+  if (!amountPaise || amountPaise <= 0) {
+    return NextResponse.json({ error: "Invalid program price." }, { status: 400 });
+  }
 
   // ── 4. Prevent duplicate active enrollments ──────────────────────────────
   const legacyEnrollSnap = await db.collection("enrollments")

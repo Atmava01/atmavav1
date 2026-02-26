@@ -39,15 +39,16 @@ export async function POST(req: NextRequest) {
     startTime?: string;
     endTime?: string;
     meetLink?: string;
+    batch?: string;
   };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
-  const { programId, title, date, startTime, endTime, meetLink } = body;
+  const { programId, title, date, startTime, endTime, meetLink, batch = "" } = body;
 
-  if (!programId || !title || !date || !startTime || !endTime || !meetLink) {
+  if (!programId || !title || !date || !startTime || !endTime) {
     return NextResponse.json(
-      { error: "Missing required fields: programId, title, date, startTime, endTime, meetLink." },
+      { error: "Missing required fields: programId, title, date, startTime, endTime." },
       { status: 400 }
     );
   }
@@ -62,7 +63,8 @@ export async function POST(req: NextRequest) {
     date,
     startTime,
     endTime,
-    meetLink,
+    meetLink:   meetLink ?? "",
+    batch,
     createdAt:  new Date().toISOString(),
   });
 

@@ -2,22 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getAllUsers, setUserRole, assignMentorToUser, getAllMentors, enrollUserInProgram } from "@/lib/firestore";
+import { getAllUsers, setUserRole } from "@/lib/firestore";
 import type { UserProfile } from "@/types";
 
 const ROLE_COLORS: Record<string, string> = { admin: "#c04040", mentor: "#7A8C74", user: "rgba(246,244,239,0.4)" };
 
 export function UsersPanel() {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [mentors, setMentors] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([getAllUsers(), getAllMentors()])
-      .then(([u, m]) => { setUsers(u); setMentors(m); setLoading(false); })
+    getAllUsers()
+      .then(u => { setUsers(u); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
@@ -31,16 +30,6 @@ export function UsersPanel() {
     await setUserRole(uid, role).catch(() => {});
     setUsers(u => u.map(x => x.uid === uid ? { ...x, role } : x));
     if (selectedUser?.uid === uid) setSelectedUser(s => s ? { ...s, role } : s);
-    setSaving(false);
-  };
-
-  const handleMentorAssign = async (userId: string, mentorId: string) => {
-    const mentor = mentors.find(m => m.uid === mentorId);
-    if (!mentor) return;
-    setSaving(true);
-    await assignMentorToUser(userId, mentorId, mentor.name).catch(() => {});
-    setUsers(u => u.map(x => x.uid === userId ? { ...x, mentorId, mentorName: mentor.name } : x));
-    if (selectedUser?.uid === userId) setSelectedUser(s => s ? { ...s, mentorId, mentorName: mentor.name } : s);
     setSaving(false);
   };
 
@@ -89,7 +78,6 @@ export function UsersPanel() {
               <div className="flex items-center gap-3 flex-shrink-0">
                 <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.05)", color: ROLE_COLORS[u.role] }}>{u.role}</span>
                 <span className="text-xs" style={{ color: "rgba(246,244,239,0.4)" }}>{u.programId ? `${u.programId}d` : "—"}</span>
-                <span className="text-xs" style={{ color: "#7A8C74" }}>{u.xp ?? 0} XP</span>
               </div>
             </motion.div>
           ))}
@@ -127,26 +115,12 @@ export function UsersPanel() {
               </div>
 
               <div>
-                <p className="text-xs tracking-widest uppercase mb-3" style={{ color: "#7A8C74" }}>Assign Mentor</p>
-                <select
-                  value={selectedUser.mentorId ?? ""}
-                  onChange={e => handleMentorAssign(selectedUser.uid, e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#F6F4EF" }}
-                  disabled={saving}
-                >
-                  <option value="">No mentor</option>
-                  {mentors.map(m => <option key={m.uid} value={m.uid}>{m.name}</option>)}
-                </select>
-              </div>
-
-              <div>
                 <p className="text-xs tracking-widest uppercase mb-2" style={{ color: "#7A8C74" }}>Program</p>
                 <p className="text-sm" style={{ color: "#F6F4EF" }}>{selectedUser.programTitle ?? "Not enrolled"}</p>
               </div>
               <div>
                 <p className="text-xs tracking-widest uppercase mb-2" style={{ color: "#7A8C74" }}>Progress</p>
-                <p className="text-sm" style={{ color: "#F6F4EF" }}>Day {selectedUser.currentDay ?? 1} · {selectedUser.xp ?? 0} XP · {selectedUser.level ?? "Beginner"}</p>
+                <p className="text-sm" style={{ color: "#F6F4EF" }}>Day {selectedUser.currentDay ?? 1}</p>
               </div>
             </div>
           </motion.div>

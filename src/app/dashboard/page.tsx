@@ -3,28 +3,17 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { AuthGuard } from "@/components/AuthGuard";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-import { MyProgram } from "@/components/dashboard/MyProgram";
-import { PracticeTracker } from "@/components/dashboard/PracticeTracker";
-import { Rewards } from "@/components/dashboard/Rewards";
-import { Messages } from "@/components/dashboard/Messages";
-import { Resources } from "@/components/dashboard/Resources";
 import { SessionsPanel } from "@/components/dashboard/SessionsPanel";
-import { Bell, Search, ArrowRight, Menu } from "lucide-react";
+import { Bell, ArrowRight, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getActiveEnrollment } from "@/lib/firestore";
 import type { Enrollment } from "@/types";
 
 const sections: Record<string, React.ComponentType> = {
   overview:  DashboardOverview,
-  program:   MyProgram,
   sessions:  SessionsPanel,
-  practice:  PracticeTracker,
-  rewards:   Rewards,
-  messages:  Messages,
-  resources: Resources,
 };
 
 /** Shown when user has not purchased a program yet. */
@@ -134,8 +123,7 @@ export default function DashboardPage() {
   const isExpired = enrollment !== false && enrollment !== null && (enrollment as Enrollment).status === "expired";
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen flex" style={{ background: "#F6F4EF" }}>
+    <div className="min-h-screen flex" style={{ background: "#F6F4EF" }}>
         <DashboardSidebar
           active={active}
           setActive={setActive}
@@ -169,13 +157,6 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-2 md:gap-4">
-              <motion.button
-                className="w-8 h-8 rounded-lg hidden md:flex items-center justify-center"
-                style={{ background: "rgba(212,204,191,0.4)", border: "1px solid #D4CCBF" }}
-                whileHover={{ borderColor: "#5C6B57" }}
-              >
-                <Search size={14} style={{ color: "#7A7771" }} />
-              </motion.button>
               <motion.button
                 className="w-8 h-8 rounded-lg flex items-center justify-center relative"
                 style={{ background: "rgba(212,204,191,0.4)", border: "1px solid #D4CCBF" }}
@@ -230,6 +211,5 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </AuthGuard>
   );
 }

@@ -29,20 +29,27 @@ export { adminAuth, adminDb };
  */
 export async function verifyFirebaseToken(req: NextRequest): Promise<string | null> {
   if (!adminAuth) {
-    console.error("[verifyFirebaseToken] Firebase Admin SDK is not initialised.");
+    console.error("[verifyFirebaseToken] adminAuth is null — Admin SDK not initialised.");
     return null;
   }
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
+  if (!authHeader?.startsWith("Bearer ")) {
+    console.warn("[verifyFirebaseToken] Missing or malformed Authorization header.");
+    return null;
+  }
 
   const idToken = authHeader.slice(7).trim();
-  if (!idToken) return null;
+  if (!idToken) {
+    console.warn("[verifyFirebaseToken] Empty Bearer token.");
+    return null;
+  }
 
   try {
     const decoded = await adminAuth.verifyIdToken(idToken);
     return decoded.uid;
-  } catch {
+  } catch (err) {
+    console.error("[verifyFirebaseToken] verifyIdToken failed:", (err as { code?: string; message?: string })?.code, (err as { message?: string })?.message);
     return null;
   }
 }

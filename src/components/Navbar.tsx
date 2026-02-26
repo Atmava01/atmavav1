@@ -100,7 +100,7 @@ export function Navbar() {
                   >
                     <div className="px-4 py-3 border-b" style={{ borderColor: "#D4CCBF" }}>
                       <p className="text-xs font-medium" style={{ color: "#2C2B29" }}>{userProfile.name}</p>
-                      <p className="text-xs" style={{ color: "#7A7771" }}>{userProfile.level} · {userProfile.xp} XP</p>
+                      <p className="text-xs" style={{ color: "#7A7771" }}>{userProfile.email}</p>
                     </div>
                     <Link href="/dashboard" onClick={() => setProfileOpen(false)}>
                       <div className="flex items-center gap-3 px-4 py-3 hover:bg-[#E8E1D6] transition-colors">

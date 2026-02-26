@@ -10,6 +10,8 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
@@ -49,6 +51,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Handle Google/Apple redirect result (fallback when popup is blocked).
+    // Must be called before onAuthStateChanged so the profile is ready when
+    // the auth state fires with the redirected user.
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (!result?.user) return;
+        const existing = await getUserProfile(result.user.uid);
+        if (!existing) {
+          await createUserProfile(result.user.uid, {
+            email: result.user.email ?? "",
+            name:  result.user.displayName ?? "Seeker",
+            role:  "user",
+            photoURL: result.user.photoURL ?? null,
+          });
+        }
+        // onAuthStateChanged below will fire right after and call loadProfile
+      })
+      .catch(() => { /* no redirect pending — ignore */ });
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
@@ -97,8 +118,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new GoogleAuthProvider();
     provider.addScope("profile");
     provider.addScope("email");
-    const result = await signInWithPopup(auth, provider);
-    // Check if profile exists; create if not
+    let result;
+    try {
+      result = await signInWithPopup(auth, provider);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/popup-blocked") {
+        // Browser blocked the popup — fall back to redirect flow.
+        // getRedirectResult (in the useEffect above) will handle the result.
+        await signInWithRedirect(auth, provider);
+        return; // page navigates away
+      }
+      throw err; // re-throw all other errors (popup-closed, unauthorized-domain, …)
+    }
+    // Popup succeeded — ensure profile exists then load it
     const existing = await getUserProfile(result.user.uid);
     if (!existing) {
       await createUserProfile(result.user.uid, {
@@ -115,7 +148,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const provider = new OAuthProvider("apple.com");
     provider.addScope("email");
     provider.addScope("name");
-    const result = await signInWithPopup(auth, provider);
+    let result;
+    try {
+      result = await signInWithPopup(auth, provider);
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/popup-blocked") {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      throw err;
+    }
     const existing = await getUserProfile(result.user.uid);
     if (!existing) {
       await createUserProfile(result.user.uid, {

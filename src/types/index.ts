@@ -1,7 +1,8 @@
 export type UserRole = "user" | "mentor" | "admin";
 export type ProgramId = "30" | "60" | "90";
-export type Level = "Beginner" | "Seeker" | "Practitioner" | "Embodied" | "Integrated";
-export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+
+export type PaymentStatus    = "created" | "paid" | "failed";
+export type EnrollmentStatus = "active" | "expired";
 
 export interface UserProfile {
   uid: string;
@@ -13,61 +14,9 @@ export interface UserProfile {
   programTitle: string | null;
   programStartDate: string | null;
   currentDay: number;
-  xp: number;
-  level: Level;
-  streakCount: number;
-  lastCheckIn: string | null; // YYYY-MM-DD
-  badges: string[];
   createdAt: string;
-  mentorId: string | null;
-  mentorName: string | null;
   bio?: string;
   specialization?: string;
-}
-
-export interface Booking {
-  id: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  mentorId: string;
-  mentorName: string;
-  programId: string;
-  date: string;       // YYYY-MM-DD
-  time: string;
-  meetLink: string;
-  googleEventId?: string;  // optional, legacy only
-  status: BookingStatus;
-  notes: string;
-  createdAt: string;
-  reminderSent24h: boolean;
-  reminderSent1h: boolean;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
-  text: string;
-  timestamp: number;
-  read: boolean;
-}
-
-export interface Conversation {
-  id: string;
-  participants: string[];
-  participantNames: Record<string, string>;
-  lastMessage: string;
-  lastMessageAt: number;
-  unreadCount: number;
-}
-
-export interface CheckIn {
-  id: string;
-  userId: string;
-  date: string;
-  xpEarned: number;
-  timestamp: number;
 }
 
 export interface Program {
@@ -75,11 +24,16 @@ export interface Program {
   title: string;
   duration: number;
   description: string;
+  /** Price in paise (INR × 100) */
   price: number;
   isActive: boolean;
   isFree: boolean;
   features: string[];
   enrolledCount: number;
+  mentorId: string | null;
+  mentorName: string | null;
+  batches: { name: string; time: string }[];
+  levels: string[];
 }
 
 export interface Resource {
@@ -92,9 +46,6 @@ export interface Resource {
   size: string;
   addedAt: string;
 }
-
-export type PaymentStatus    = "created" | "paid" | "failed";
-export type EnrollmentStatus = "active" | "expired";
 
 export interface Payment {
   id: string;
@@ -126,6 +77,12 @@ export interface Enrollment {
   endDate: string;
   createdAt: string;
   grantedByAdmin: boolean;
+  /** User-selected level (e.g. "Beginner", "Intermediate", "Advanced") */
+  level: string;
+  /** User-selected batch (e.g. "Morning", "Evening") */
+  batch: string;
+  /** Remaining class days (decrements Mon–Sat only) */
+  remainingDays: number;
 }
 
 /** A live session created by a mentor for a program */
@@ -139,5 +96,19 @@ export interface Session {
   startTime: string;  // HH:MM
   endTime: string;    // HH:MM
   meetLink: string;
+  /** Batch this session is for (e.g. "Morning", "Evening") */
+  batch: string;
+  createdAt: string;
+}
+
+/** Attendance record for a student in a session */
+export interface Attendance {
+  id: string;
+  sessionId: string;
+  programId: string;
+  userId: string;
+  userName: string;
+  present: boolean;
+  date: string;       // YYYY-MM-DD
   createdAt: string;
 }

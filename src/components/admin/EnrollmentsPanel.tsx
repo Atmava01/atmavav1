@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserPlus, CheckCircle, XCircle, CalendarClock, RefreshCw, AlertCircle, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getEnrollmentsAdmin, getAllUsers } from "@/lib/firestore";
-import type { Enrollment, UserProfile } from "@/types";
+import { getEnrollmentsAdmin, getAllUsers, getPrograms } from "@/lib/firestore";
+import type { Enrollment, UserProfile, Program } from "@/types";
 
 const PROGRAMS = [
   { id: "30", label: "30 Days — Foundation" },
@@ -37,9 +37,13 @@ export function EnrollmentsPanel() {
   const [users, setUsers]             = useState<UserProfile[]>([]);
   const [loading, setLoading]         = useState(true);
 
+  const [programs, setPrograms] = useState<Program[]>([]);
+
   // Grant form state
   const [grantUserId, setGrantUserId]   = useState("");
   const [grantProgram, setGrantProgram] = useState("30");
+  const [grantLevel, setGrantLevel]     = useState("");
+  const [grantBatch, setGrantBatch]     = useState("");
   const [grantStart, setGrantStart]     = useState("");
   const [granting, setGranting]         = useState(false);
   const [grantError, setGrantError]     = useState("");
@@ -56,9 +60,10 @@ export function EnrollmentsPanel() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [e, u] = await Promise.all([getEnrollmentsAdmin(200), getAllUsers(200)]);
+    const [e, u, p] = await Promise.all([getEnrollmentsAdmin(200), getAllUsers(200), getPrograms()]);
     setEnrollments(e);
     setUsers(u);
+    setPrograms(p);
     setLoading(false);
   }, []);
 
@@ -91,13 +96,15 @@ export function EnrollmentsPanel() {
         body: JSON.stringify({
           userId:    grantUserId,
           programId: grantProgram,
+          level:     grantLevel,
+          batch:     grantBatch,
           ...(grantStart ? { startDate: grantStart } : {}),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to grant enrollment.");
       setGrantSuccess(`Access granted! Enrollment ID: ${data.enrollmentId}`);
-      setGrantUserId(""); setGrantProgram("30"); setGrantStart(""); setUserSearch("");
+      setGrantUserId(""); setGrantProgram("30"); setGrantLevel(""); setGrantBatch(""); setGrantStart(""); setUserSearch("");
       await loadData();
     } catch (e) {
       setGrantError(e instanceof Error ? e.message : "Something went wrong.");
@@ -240,7 +247,11 @@ export function EnrollmentsPanel() {
             {/* Program select */}
             <div>
               <label className="text-xs mb-1.5 block" style={{ color: "rgba(246,244,239,0.5)" }}>Program</label>
-              <select value={grantProgram} onChange={e => setGrantProgram(e.target.value)} style={inputStyle}>
+              <select
+                value={grantProgram}
+                onChange={e => { setGrantProgram(e.target.value); setGrantLevel(""); setGrantBatch(""); }}
+                style={inputStyle}
+              >
                 {PROGRAMS.map(p => (
                   <option key={p.id} value={p.id} style={{ background: "#2C2B29" }}>{p.label}</option>
                 ))}
@@ -257,6 +268,38 @@ export function EnrollmentsPanel() {
                 style={inputStyle}
               />
             </div>
+
+            {/* Level — populated from selected program */}
+            {(() => {
+              const prog = programs.find(p => p.id === grantProgram);
+              return prog?.levels && prog.levels.length > 0 ? (
+                <div>
+                  <label className="text-xs mb-1.5 block" style={{ color: "rgba(246,244,239,0.5)" }}>Level</label>
+                  <select value={grantLevel} onChange={e => setGrantLevel(e.target.value)} style={inputStyle}>
+                    <option value="" style={{ background: "#2C2B29" }}>Select level…</option>
+                    {prog.levels.map(l => (
+                      <option key={l} value={l} style={{ background: "#2C2B29" }}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Batch — populated from selected program */}
+            {(() => {
+              const prog = programs.find(p => p.id === grantProgram);
+              return prog?.batches && prog.batches.length > 0 ? (
+                <div>
+                  <label className="text-xs mb-1.5 block" style={{ color: "rgba(246,244,239,0.5)" }}>Batch</label>
+                  <select value={grantBatch} onChange={e => setGrantBatch(e.target.value)} style={inputStyle}>
+                    <option value="" style={{ background: "#2C2B29" }}>Select batch…</option>
+                    {prog.batches.map(b => (
+                      <option key={b.name} value={b.name} style={{ background: "#2C2B29" }}>{b.name} · {b.time}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* Error / Success */}
@@ -339,6 +382,9 @@ export function EnrollmentsPanel() {
                     <p className="text-xs" style={{ color: "rgba(246,244,239,0.35)" }}>{getUserEmail(e.userId)}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1.5 text-xs" style={{ color: "rgba(246,244,239,0.4)" }}>
                       <span>{e.programId}-Day Program</span>
+                      {e.level && <span>{e.level}</span>}
+                      {e.batch && <span>{e.batch} batch</span>}
+                      {e.remainingDays !== undefined && <span>{e.remainingDays}d remaining</span>}
                       <span>{e.startDate} → {e.endDate}</span>
                     </div>
                   </div>
