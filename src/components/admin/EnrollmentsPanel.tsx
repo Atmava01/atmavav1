@@ -7,11 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getEnrollmentsAdmin, getAllUsers, getPrograms } from "@/lib/firestore";
 import type { Enrollment, UserProfile, Program } from "@/types";
 
-const PROGRAMS = [
-  { id: "30", label: "30 Days — Foundation" },
-  { id: "60", label: "60 Days — Deepening" },
-  { id: "90", label: "90 Days — Inner Mastery" },
-];
 
 function statusBadge(status: string) {
   const active = status === "active";
@@ -63,7 +58,9 @@ export function EnrollmentsPanel() {
     const [e, u, p] = await Promise.all([getEnrollmentsAdmin(200), getAllUsers(200), getPrograms()]);
     setEnrollments(e);
     setUsers(u);
-    setPrograms(p);
+    setPrograms(p.sort((a, b) => Number(a.duration) - Number(b.duration)));
+    // Default the grant dropdown to the first available program
+    if (p.length > 0) setGrantProgram(p.sort((a, b) => Number(a.duration) - Number(b.duration))[0].id);
     setLoading(false);
   }, []);
 
@@ -252,9 +249,14 @@ export function EnrollmentsPanel() {
                 onChange={e => { setGrantProgram(e.target.value); setGrantLevel(""); setGrantBatch(""); }}
                 style={inputStyle}
               >
-                {PROGRAMS.map(p => (
-                  <option key={p.id} value={p.id} style={{ background: "#2C2B29" }}>{p.label}</option>
-                ))}
+                {programs.length > 0
+                  ? programs.map(p => (
+                      <option key={p.id} value={p.id} style={{ background: "#2C2B29" }}>
+                        {p.title ? `${p.title} (${p.duration} days)` : `${p.duration}-Day Program`}
+                      </option>
+                    ))
+                  : <option disabled>Loading programs…</option>
+                }
               </select>
             </div>
 

@@ -118,7 +118,6 @@ function LoginInner() {
 
   return (
     <motion.div
-      className="w-full max-w-md relative z-10"
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9 }}
@@ -302,7 +301,7 @@ export default function LoginPage() {
         </motion.span>
       </Link>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 mt-16 mb-10">
         <Suspense
           fallback={
             <div className="flex justify-center py-20">

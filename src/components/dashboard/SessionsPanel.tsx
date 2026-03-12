@@ -170,28 +170,43 @@ export function SessionsPanel() {
                         </div>
                       </div>
 
-                      {/* Join button */}
-                      <a
-                        href={session.meetLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ flexShrink: 0 }}
-                      >
-                        <motion.button
+                      {/* Join button — only render when a real URL exists */}
+                      {session.meetLink ? (
+                        <a
+                          href={session.meetLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ flexShrink: 0 }}
+                        >
+                          <motion.button
+                            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs tracking-widest uppercase"
+                            style={{
+                              background: isToday ? "#5C6B57" : "rgba(92,107,87,0.1)",
+                              color: isToday ? "#F6F4EF" : "#5C6B57",
+                              border: "1px solid rgba(92,107,87,0.3)",
+                              minHeight: "40px",
+                            }}
+                            whileHover={{ background: "#5C6B57", color: "#F6F4EF", scale: 1.02 }}
+                            whileTap={{ scale: 0.97 }}
+                          >
+                            <ExternalLink size={11} />
+                            <span className="hidden sm:inline">Join</span>
+                          </motion.button>
+                        </a>
+                      ) : (
+                        <span
                           className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs tracking-widest uppercase"
                           style={{
-                            background: isToday ? "#5C6B57" : "rgba(92,107,87,0.1)",
-                            color: isToday ? "#F6F4EF" : "#5C6B57",
-                            border: "1px solid rgba(92,107,87,0.3)",
+                            background: "rgba(255,255,255,0.04)",
+                            color: "rgba(246,244,239,0.25)",
+                            border: "1px solid rgba(255,255,255,0.07)",
                             minHeight: "40px",
+                            flexShrink: 0,
                           }}
-                          whileHover={{ background: "#5C6B57", color: "#F6F4EF", scale: 1.02 }}
-                          whileTap={{ scale: 0.97 }}
                         >
-                          <ExternalLink size={11} />
-                          <span className="hidden sm:inline">Join</span>
-                        </motion.button>
-                      </a>
+                          No link yet
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

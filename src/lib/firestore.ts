@@ -93,67 +93,31 @@ export async function upsertProgram(program: Program): Promise<void> {
   await setDoc(doc(db, "programs", program.id), program);
 }
 
+export async function deleteProgram(programId: string): Promise<void> {
+  await deleteDoc(doc(db, "programs", programId));
+}
+
 export async function seedPrograms(): Promise<void> {
-  const defaultPrograms: Program[] = [
-    {
-      id: "30",
-      title: "Foundation",
-      duration: 30,
-      description: "Ground yourself in daily practice. Learn to observe the mind, establish stillness rituals, and build an unshakeable base.",
-      price: 14900,
-      isActive: true,
-      isFree: false,
-      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
-      enrolledCount: 0,
-      mentorId: null,
-      mentorName: null,
-      batches: [
-        { name: "Morning", time: "6:30 AM" },
-        { name: "Evening", time: "6:00 PM" },
-      ],
-      levels: ["Beginner", "Intermediate", "Advanced"],
-    },
-    {
-      id: "60",
-      title: "Deepening",
-      duration: 60,
-      description: "Move beyond the surface. Dissolve conditioning, integrate shadow work, and cultivate a living relationship with awareness.",
-      price: 27900,
-      isActive: true,
-      isFree: false,
-      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
-      enrolledCount: 0,
-      mentorId: null,
-      mentorName: null,
-      batches: [
-        { name: "Morning", time: "6:30 AM" },
-        { name: "Evening", time: "6:00 PM" },
-      ],
-      levels: ["Beginner", "Intermediate", "Advanced"],
-    },
-    {
-      id: "90",
-      title: "Inner Mastery",
-      duration: 90,
-      description: "The complete Atmava immersion. Three months of structured transformation across all layers.",
-      price: 44900,
-      isActive: true,
-      isFree: false,
-      features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance", "Level-based practice"],
-      enrolledCount: 0,
-      mentorId: null,
-      mentorName: null,
-      batches: [
-        { name: "Morning", time: "6:30 AM" },
-        { name: "Evening", time: "6:00 PM" },
-      ],
-      levels: ["Beginner", "Intermediate", "Advanced"],
-    },
-  ];
-  for (const p of defaultPrograms) {
-    const snap = await getDoc(doc(db, "programs", p.id));
-    if (!snap.exists()) await upsertProgram(p);
-  }
+  const baseProgram: Program = {
+    id: "30",
+    title: "Foundation",
+    duration: 30,
+    description: "Ground yourself in daily practice. Live sessions Monday through Saturday with a dedicated mentor, available in morning and evening batches.",
+    price: 99900, // ₹999 in paise
+    isActive: true,
+    isFree: false,
+    features: ["Live daily sessions (Mon–Sat)", "Morning & Evening batches", "Dedicated mentor guidance", "Attendance tracking", "Beginner to Advanced levels"],
+    enrolledCount: 0,
+    mentorId: null,
+    mentorName: null,
+    batches: [
+      { name: "Morning", time: "6:30 AM" },
+      { name: "Evening", time: "6:00 PM" },
+    ],
+    levels: ["Beginner", "Intermediate", "Advanced"],
+  };
+  const snap = await getDoc(doc(db, "programs", baseProgram.id));
+  if (!snap.exists()) await upsertProgram(baseProgram);
 }
 
 // ─── Resources ───────────────────────────────────────────────────────────────

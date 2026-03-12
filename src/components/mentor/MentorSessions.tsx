@@ -555,17 +555,27 @@ export function MentorSessions() {
                           ? <span style={{ fontSize: "10px", color: "#7A8C74" }}>✓</span>
                           : <Copy size={12} />}
                       </motion.button>
-                      <a href={s.meetLink} target="_blank" rel="noopener noreferrer">
-                        <motion.button
-                          className="p-2 rounded-lg"
-                          style={{ background: "rgba(255,255,255,0.06)", color: "rgba(246,244,239,0.5)" }}
-                          title="Open link"
-                          whileHover={{ background: "rgba(255,255,255,0.12)" }}
-                          whileTap={{ scale: 0.92 }}
+                      {s.meetLink ? (
+                        <a href={s.meetLink} target="_blank" rel="noopener noreferrer">
+                          <motion.button
+                            className="p-2 rounded-lg"
+                            style={{ background: "rgba(255,255,255,0.06)", color: "rgba(246,244,239,0.5)" }}
+                            title="Open meet link"
+                            whileHover={{ background: "rgba(255,255,255,0.12)" }}
+                            whileTap={{ scale: 0.92 }}
+                          >
+                            <ExternalLink size={12} />
+                          </motion.button>
+                        </a>
+                      ) : (
+                        <span
+                          className="p-2 rounded-lg flex items-center justify-center"
+                          title="No meet link set"
+                          style={{ background: "rgba(255,255,255,0.03)", color: "rgba(246,244,239,0.2)", cursor: "default" }}
                         >
                           <ExternalLink size={12} />
-                        </motion.button>
-                      </a>
+                        </span>
+                      )}
                       <motion.button
                         onClick={() => {
                           if (isEditing) { setEditingId(null); setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch })); }

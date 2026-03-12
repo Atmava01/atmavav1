@@ -98,7 +98,7 @@ export function CTASection() {
           animate={inView ? { opacity: 1 } : {}}
           transition={{ delay: 0.6 }}
         >
-          No commitment required · Begin free
+          Live sessions Mon–Sat · Morning & Evening batches
         </motion.p>
       </div>
     </section>

@@ -21,7 +21,7 @@ const NAV_COLS = [
       { href: "/auth/signup", text: "Begin Now" },
       { href: "/auth/login", text: "Sign In" },
       { href: "/dashboard", text: "Dashboard" },
-      { href: "/dashboard?tab=booking", text: "Book a Session" },
+      { href: "/dashboard", text: "My Sessions" },
     ],
   },
   {

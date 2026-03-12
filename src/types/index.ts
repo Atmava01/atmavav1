@@ -1,5 +1,5 @@
 export type UserRole = "user" | "mentor" | "admin";
-export type ProgramId = "30" | "60" | "90";
+export type ProgramId = string;
 
 export type PaymentStatus    = "created" | "paid" | "failed";
 export type EnrollmentStatus = "active" | "expired";

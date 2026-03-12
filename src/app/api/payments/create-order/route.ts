@@ -43,7 +43,20 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 4. Fetch program and resolve price from Firestore ─────────────────────
-  const programDoc  = await db.collection("programs").doc(programId).get();
+  let programDoc: FirebaseFirestore.DocumentSnapshot;
+  try {
+    programDoc = await db.collection("programs").doc(programId).get();
+  } catch (err) {
+    const e = err as { code?: number; message?: string };
+    console.error("[create-order] Firestore read failed:", e.code, e.message);
+    if (e.code === 7) {
+      return NextResponse.json(
+        { error: "Server configuration error — Firestore permission denied. Check FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY in .env.local." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({ error: "Failed to fetch program data." }, { status: 500 });
+  }
   if (!programDoc.exists) {
     return NextResponse.json({ error: "Program not found." }, { status: 404 });
   }

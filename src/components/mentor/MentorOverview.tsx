@@ -167,17 +167,26 @@ export function MentorOverview() {
                           ? <span style={{ color: "#7A8C74", fontSize: "10px" }}>✓</span>
                           : <Copy size={12} />}
                       </motion.button>
-                      <a href={s.meetLink} target="_blank" rel="noopener noreferrer">
-                        <motion.button
+                      {s.meetLink ? (
+                        <a href={s.meetLink} target="_blank" rel="noopener noreferrer">
+                          <motion.button
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs tracking-widest uppercase"
+                            style={{ background: "#7A8C74", color: "#F6F4EF", minHeight: "36px" }}
+                            whileHover={{ background: "#6a7c64" }}
+                            whileTap={{ scale: 0.97 }}
+                          >
+                            <ExternalLink size={11} />
+                            Join
+                          </motion.button>
+                        </a>
+                      ) : (
+                        <span
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs tracking-widest uppercase"
-                          style={{ background: "#7A8C74", color: "#F6F4EF", minHeight: "36px" }}
-                          whileHover={{ background: "#6a7c64" }}
-                          whileTap={{ scale: 0.97 }}
+                          style={{ background: "rgba(255,255,255,0.04)", color: "rgba(246,244,239,0.25)", minHeight: "36px" }}
                         >
-                          <ExternalLink size={11} />
-                          Join
-                        </motion.button>
-                      </a>
+                          No link
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

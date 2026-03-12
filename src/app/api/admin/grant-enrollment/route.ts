@@ -60,17 +60,19 @@ export async function POST(req: NextRequest) {
     : programId;
 
   // Check for existing active enrollment
-  const nowIso = new Date().toISOString();
+  // Using only equality filters to avoid needing a composite Firestore index.
+  // endDate comparison is done in code instead.
   const existingQ = await db
     .collection("enrollments")
     .where("userId", "==", userId)
     .where("programId", "==", programId)
     .where("status", "==", "active")
-    .where("endDate", ">", nowIso)
-    .limit(1)
     .get();
 
-  if (!existingQ.empty) {
+  const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const hasActive = existingQ.docs.some(d => (d.data().endDate ?? "") >= todayStr);
+
+  if (hasActive) {
     return NextResponse.json(
       { error: "User already has an active enrollment for this program." },
       { status: 409 }

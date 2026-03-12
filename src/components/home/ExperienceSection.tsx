@@ -2,28 +2,28 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Video, Sun, Star, Users } from "lucide-react";
+import { Video, Sun, CalendarCheck, Users } from "lucide-react";
 
 const features = [
   {
     icon: Video,
     title: "Live Sessions",
-    desc: "Weekly live group meditations and teachings with experienced guides.",
+    desc: "Daily live group classes with experienced guides, Monday through Saturday.",
   },
   {
     icon: Sun,
-    title: "Daily Practice",
-    desc: "Structured morning and evening rituals tailored to your program.",
+    title: "Two Batches",
+    desc: "Morning and evening batches so you practice at the time that suits you best.",
   },
   {
-    icon: Star,
-    title: "Gamified Growth",
-    desc: "XP, streaks, and milestone badges that honor your inner progress.",
+    icon: CalendarCheck,
+    title: "Attendance Tracking",
+    desc: "Your daily attendance is recorded so your mentor can support your consistency.",
   },
   {
     icon: Users,
     title: "Mentor Guidance",
-    desc: "Personal mentor sessions for deep integration and accountability.",
+    desc: "A dedicated mentor guides your program, tracks your progress, and holds the space.",
   },
 ];
 
