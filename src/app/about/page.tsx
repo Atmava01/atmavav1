@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { MentorsSection } from "@/components/home/MentorsSection";
 
 const timeline = [
   { year: "2019", event: "The Seed", desc: "Atmava was born from a single question: why do so few people find lasting inner peace?" },
@@ -240,6 +241,8 @@ export default function AboutPage() {
           ))}
         </div>
       </section>
+
+      <MentorsSection />
 
       <Footer />
     </main>
