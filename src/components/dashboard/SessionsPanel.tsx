@@ -2,218 +2,186 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, Calendar, Clock, User, Video } from "lucide-react";
+import { Video, CheckCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getActiveEnrollment, getUpcomingSessionsForBatch } from "@/lib/firestore";
-import type { Session, Enrollment } from "@/types";
+import {
+  getActiveEnrollment,
+  getSessionsForProgram,
+  getAttendanceForUser,
+  getRecentMoodLogs,
+} from "@/lib/firestore";
+import type { Session, Enrollment, Attendance } from "@/types";
+import type { MoodLog } from "@/lib/firestore";
+import Link from "next/link";
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+function fmtDate(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
   });
 }
 
-function formatTime(t: string): string {
-  const [hStr, mStr] = t.split(":");
-  const h = parseInt(hStr, 10);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${mStr} ${ampm}`;
+function fmtTime(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
+function fmtDuration(start: string, end: string) {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return `${(eh * 60 + em) - (sh * 60 + sm)} min`;
+}
+
+const MOOD_EMOJI: Record<string, string> = {
+  Tired: "😴", Neutral: "😐", Good: "🙂", Energised: "✨", Motivated: "🔥",
+};
+
 export function SessionsPanel() {
-  const { user, userProfile } = useAuth();
-  const [sessions, setSessions]     = useState<Session[]>([]);
+  const { user } = useAuth();
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
-  const [loading, setLoading]       = useState(true);
+  const [rows, setRows] = useState<{ att: Attendance; session: Session | undefined }[]>([]);
+  const [moodByDate, setMoodByDate] = useState<Map<string, string>>(new Map());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    getActiveEnrollment(user.uid)
-      .then(async (e) => {
-        setEnrollment(e);
-        if (e?.programId && e?.batch) {
-          const s = await getUpcomingSessionsForBatch(e.programId, e.batch);
-          setSessions(s);
-        } else if (e?.programId) {
-          // fallback: no batch set, show all sessions for program
-          const { getUpcomingSessionsForProgram } = await import("@/lib/firestore");
-          const s = await getUpcomingSessionsForProgram(e.programId);
-          setSessions(s);
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [user, userProfile?.programId]);
+    (async () => {
+      const e = await getActiveEnrollment(user.uid);
+      setEnrollment(e);
+      if (e) {
+        const [allSessions, attendance, moodLogs] = await Promise.all([
+          getSessionsForProgram(e.programId),
+          getAttendanceForUser(user.uid, e.programId, 200),
+          getRecentMoodLogs(user.uid, 200),
+        ]);
 
-  const today = new Date().toISOString().split("T")[0];
+        const sessionMap = new Map(allSessions.map(s => [s.id, s]));
+        const presentAtt = attendance
+          .filter(a => a.present)
+          .sort((a, b) => b.date.localeCompare(a.date));
+
+        setRows(presentAtt.map(a => ({ att: a, session: sessionMap.get(a.sessionId) })));
+        setMoodByDate(new Map(moodLogs.map(m => [m.date, m.mood])));
+      }
+      setLoading(false);
+    })();
+  }, [user]);
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-          className="w-7 h-7 rounded-full border-2 border-t-transparent"
-          style={{ borderColor: "#5C6B57" }}
-        />
+      <div className="flex items-center justify-center h-40">
+        <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "#D4CCBF", borderTopColor: "#5C6B57" }} />
+      </div>
+    );
+  }
+
+  if (!enrollment) {
+    return (
+      <div className="max-w-md mx-auto mt-16 text-center">
+        <Video size={40} style={{ color: "#D4CCBF", margin: "0 auto 12px" }} />
+        <p className="text-sm" style={{ color: "#4A4845" }}>No active enrollment found.</p>
+        <Link href="/programs">
+          <motion.button className="mt-4 px-5 py-2.5 rounded-xl text-sm" style={{ background: "#5C6B57", color: "#F6F4EF" }}
+            whileHover={{ background: "#4A5845" }} whileTap={{ scale: 0.97 }}>
+            Browse Programs
+          </motion.button>
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.4rem, 4vw, 1.9rem)", color: "#2C2B29", fontWeight: 400 }}>
-          Live Sessions
-        </h2>
-        <p className="text-xs md:text-sm mt-1" style={{ color: "#7A7771" }}>
-          {enrollment
-            ? `${enrollment.programId}-Day Program · ${enrollment.batch || ""} Batch · ${enrollment.level || ""}`
-            : userProfile?.programTitle ?? "Your Program"} — Upcoming sessions
+    <div className="space-y-5 max-w-2xl">
+      <div>
+        <h1 className="text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2C2B29" }}>
+          Session History
+        </h1>
+        <p className="text-xs mt-1" style={{ color: "#4A4845" }}>
+          {rows.length} session{rows.length !== 1 ? "s" : ""} attended · {enrollment.batch} Batch
         </p>
-      </motion.div>
+      </div>
 
-      {!enrollment && !userProfile?.programId ? (
+      {rows.length === 0 ? (
         <motion.div
-          className="p-8 rounded-2xl text-center"
-          style={{ background: "#E8E1D6", border: "1px solid #D4CCBF" }}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="rounded-2xl p-10 text-center"
+          style={{ background: "#fff", border: "1px solid #D4CCBF" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-          <Video size={28} className="mx-auto mb-4" style={{ color: "#7A7771" }} />
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.2rem", color: "#2C2B29" }}>
-            No active enrollment
-          </p>
-          <p className="text-xs md:text-sm mt-2" style={{ color: "#7A7771" }}>
-            Enroll in a program to access live sessions.
-          </p>
-        </motion.div>
-      ) : sessions.length === 0 ? (
-        <motion.div
-          className="p-8 md:p-12 rounded-2xl text-center"
-          style={{ background: "#E8E1D6", border: "1px solid #D4CCBF" }}
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <motion.div
-            className="w-12 h-12 rounded-full mx-auto mb-5 flex items-center justify-center"
-            style={{ background: "rgba(92,107,87,0.1)", border: "1px solid rgba(92,107,87,0.2)" }}
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 3, repeat: Infinity }}
-          >
-            <Calendar size={20} style={{ color: "#5C6B57" }} />
-          </motion.div>
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.3rem", color: "#2C2B29", fontWeight: 300 }}>
-            No upcoming sessions
-          </p>
-          <p className="text-xs md:text-sm mt-2" style={{ color: "#7A7771" }}>
-            Your mentor will schedule sessions here. Check back soon.
-          </p>
+          <CheckCircle size={36} style={{ color: "#D4CCBF", margin: "0 auto 12px" }} />
+          <p className="text-sm" style={{ color: "#4A4845" }}>No sessions attended yet.</p>
+          <p className="text-xs mt-1" style={{ color: "#9A9490" }}>Your completed sessions will appear here.</p>
         </motion.div>
       ) : (
-        <div className="space-y-3 md:space-y-4">
-          {sessions.map((session, i) => {
-            const isToday = session.date === today;
-            return (
-              <motion.div
-                key={session.id}
-                className="rounded-2xl overflow-hidden"
-                style={{ border: `1px solid ${isToday ? "#5C6B57" : "#D4CCBF"}` }}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.07 }}
-                whileHover={{ y: -2, boxShadow: "0 6px 24px rgba(44,43,41,0.08)", borderColor: "#5C6B57" }}
-              >
-                {/* Green left accent for today's session */}
-                <div className="flex">
-                  {isToday && (
-                    <div className="w-1 flex-shrink-0" style={{ background: "#5C6B57" }} />
-                  )}
-                  <div className="flex-1 p-4 md:p-5" style={{ background: "#F6F4EF" }}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        {isToday && (
-                          <span
-                            className="inline-block px-2 py-0.5 rounded-full text-xs tracking-widest uppercase mb-2"
-                            style={{ background: "rgba(92,107,87,0.1)", color: "#5C6B57", border: "1px solid rgba(92,107,87,0.2)" }}
-                          >
-                            Today
-                          </span>
-                        )}
-                        <h3
-                          className="font-medium mb-1"
-                          style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1rem, 3vw, 1.2rem)", color: "#2C2B29" }}
-                        >
-                          {session.title}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar size={11} style={{ color: "#7A7771" }} />
-                            <span className="text-xs" style={{ color: "#7A7771" }}>{formatDate(session.date)}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Clock size={11} style={{ color: "#7A7771" }} />
-                            <span className="text-xs" style={{ color: "#7A7771" }}>
-                              {formatTime(session.startTime)} – {formatTime(session.endTime)}
-                            </span>
-                          </div>
-                          {session.mentorName && (
-                            <div className="flex items-center gap-1.5">
-                              <User size={11} style={{ color: "#7A7771" }} />
-                              <span className="text-xs" style={{ color: "#7A7771" }}>{session.mentorName}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+        <motion.div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "#fff", border: "1px solid #D4CCBF" }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Table header */}
+          <div
+            className="hidden md:grid px-5 py-3"
+            style={{
+              gridTemplateColumns: "1fr 130px 110px 80px 50px",
+              background: "#F6F4EF",
+              borderBottom: "1px solid #D4CCBF",
+            }}
+          >
+            {["Session", "Guide", "Date", "Duration", "Mood"].map(h => (
+              <p key={h} className="text-[10px] font-medium tracking-widest uppercase" style={{ color: "#4A4845" }}>{h}</p>
+            ))}
+          </div>
 
-                      {/* Join button — only render when a real URL exists */}
-                      {session.meetLink ? (
-                        <a
-                          href={session.meetLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ flexShrink: 0 }}
-                        >
-                          <motion.button
-                            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs tracking-widest uppercase"
-                            style={{
-                              background: isToday ? "#5C6B57" : "rgba(92,107,87,0.1)",
-                              color: isToday ? "#F6F4EF" : "#5C6B57",
-                              border: "1px solid rgba(92,107,87,0.3)",
-                              minHeight: "40px",
-                            }}
-                            whileHover={{ background: "#5C6B57", color: "#F6F4EF", scale: 1.02 }}
-                            whileTap={{ scale: 0.97 }}
-                          >
-                            <ExternalLink size={11} />
-                            <span className="hidden sm:inline">Join</span>
-                          </motion.button>
-                        </a>
-                      ) : (
-                        <span
-                          className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs tracking-widest uppercase"
-                          style={{
-                            background: "rgba(255,255,255,0.04)",
-                            color: "rgba(246,244,239,0.25)",
-                            border: "1px solid rgba(255,255,255,0.07)",
-                            minHeight: "40px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          No link yet
-                        </span>
-                      )}
-                    </div>
+          <div className="divide-y" style={{ borderColor: "#F0EBE3" }}>
+            {rows.map(({ att, session }, i) => {
+              const mood = moodByDate.get(att.date);
+              return (
+                <motion.div
+                  key={att.id}
+                  className="px-5 py-4 flex flex-col md:grid gap-1 md:gap-0 md:items-center"
+                  style={{ gridTemplateColumns: "1fr 130px 110px 80px 50px" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: i * 0.03 }}
+                >
+                  {/* Session name */}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: "#2C2B29" }}>
+                      {session?.title ?? "Session"}
+                    </p>
+                    {/* Mobile: show extra info inline */}
+                    <p className="text-xs md:hidden mt-0.5" style={{ color: "#4A4845" }}>
+                      {session?.mentorName ?? "—"} · {fmtDate(att.date)}
+                      {session && ` · ${fmtDuration(session.startTime, session.endTime)}`}
+                      {mood && ` · ${MOOD_EMOJI[mood] ?? mood}`}
+                    </p>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+
+                  {/* Guide */}
+                  <p className="hidden md:block text-xs truncate" style={{ color: "#4A4845" }}>
+                    {session?.mentorName ?? "—"}
+                  </p>
+
+                  {/* Date */}
+                  <p className="hidden md:block text-xs" style={{ color: "#4A4845" }}>
+                    {fmtDate(att.date)}
+                  </p>
+
+                  {/* Duration */}
+                  <p className="hidden md:block text-xs" style={{ color: "#4A4845" }}>
+                    {session ? fmtDuration(session.startTime, session.endTime) : "—"}
+                  </p>
+
+                  {/* Mood */}
+                  <p className="hidden md:block text-base">
+                    {mood ? (MOOD_EMOJI[mood] ?? mood) : <span style={{ color: "#D4CCBF" }}>—</span>}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
       )}
     </div>
   );

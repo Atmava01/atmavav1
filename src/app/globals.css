@@ -8,7 +8,7 @@
   --accent: #5C6B57;
   --accent-light: #7A8C74;
   --text: #2C2B29;
-  --text-muted: #7A7771;
+  --text-muted: #4A4845;
   --border: #D4CCBF;
   --shadow: rgba(44, 43, 41, 0.08);
 }
@@ -57,6 +57,13 @@ h1, h2, h3, .serif {
 
 ::selection { background-color: var(--accent); color: #F6F4EF; }
 :focus-visible { outline: 1.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+button:not(:disabled) {
+  transition: opacity 0.2s ease;
+}
+button:not(:disabled):hover {
+  opacity: 0.8;
+}
 
 @keyframes float {
   0%, 100% { transform: translateY(0px); }

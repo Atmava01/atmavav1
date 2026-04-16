@@ -11,7 +11,7 @@ function emptyProgram(): Program {
     title: "",
     duration: 30,
     description: "",
-    price: 14900,
+    price: 149,
     isActive: true,
     isFree: false,
     features: ["Live daily sessions", "Mon–Sat attendance", "Mentor guidance"],
@@ -20,6 +20,7 @@ function emptyProgram(): Program {
     mentorName: null,
     batches: [{ name: "Morning", time: "6:30 AM" }, { name: "Evening", time: "6:00 PM" }],
     levels: ["Beginner", "Intermediate", "Advanced"],
+    badge: null,
   };
 }
 
@@ -184,13 +185,23 @@ export function ProgramsPanel() {
                     }}>
                       {p.isActive ? "Active" : "Inactive"}
                     </span>
+                    {p.badge && (
+                      <span style={{
+                        fontSize: "11px", padding: "2px 8px", borderRadius: "20px",
+                        background: p.badge === "most-popular" ? "rgba(92,107,87,0.3)" : "rgba(92,107,87,0.12)",
+                        color: "#7A8C74",
+                        border: "1px solid rgba(122,140,116,0.35)",
+                      }}>
+                        {p.badge === "most-popular" ? "Most Popular" : "Best Value"}
+                      </span>
+                    )}
                   </div>
                   {p.description && (
                     <p style={{ fontSize: "13px", color: "rgba(246,244,239,0.45)", margin: "0 0 8px" }}>{p.description}</p>
                   )}
                   <div style={{ fontSize: "12px", color: "rgba(246,244,239,0.35)", display: "flex", gap: "20px", flexWrap: "wrap" }}>
                     <span>{p.duration} days</span>
-                    <span>₹{(p.price / 100).toLocaleString("en-IN")}</span>
+                    <span>₹{p.price.toLocaleString("en-IN")}</span>
                     <span>{p.enrolledCount ?? 0} enrolled</span>
                     {p.mentorName && <span>Mentor: {p.mentorName}</span>}
                   </div>
@@ -340,12 +351,9 @@ export function ProgramsPanel() {
               {/* Price / Duration */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
-                  <label style={labelStyle}>Price (paise)</label>
+                  <label style={labelStyle}>Price (₹)</label>
                   <input type="number" value={e.price}
                     onChange={ev => patch({ price: Number(ev.target.value) })} style={inputStyle} />
-                  <div style={{ fontSize: "11px", color: "rgba(246,244,239,0.3)", marginTop: "4px" }}>
-                    = ₹{(e.price / 100).toLocaleString("en-IN")}
-                  </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Duration (days)</label>
@@ -364,6 +372,20 @@ export function ProgramsPanel() {
                   <input type="checkbox" checked={e.isFree} onChange={ev => patch({ isFree: ev.target.checked })} />
                   Free
                 </label>
+              </div>
+
+              {/* Badge */}
+              <div>
+                <label style={labelStyle}>Badge</label>
+                <select
+                  value={e.badge ?? ""}
+                  onChange={ev => patch({ badge: (ev.target.value as "most-popular" | "best-value") || null })}
+                  style={{ ...inputStyle, background: "rgba(30,28,26,0.95)" }}
+                >
+                  <option value="">— None —</option>
+                  <option value="most-popular">Most Popular</option>
+                  <option value="best-value">Best Value</option>
+                </select>
               </div>
 
               {/* Mentor */}

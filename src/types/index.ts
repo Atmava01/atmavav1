@@ -17,6 +17,27 @@ export interface UserProfile {
   createdAt: string;
   bio?: string;
   specialization?: string;
+  phone?: string;
+  city?: string;
+  specializations?: string[];
+  yearsOfExperience?: string;
+  certifications?: string;
+  trainerStatus?: "approved" | "pending" | "inactive";
+  mentorBankDetails?: {
+    bankName?: string;
+    accountHolderName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    accountType?: "Savings" | "Current";
+    updatedAt?: string;
+  };
+  mentorNotificationSettings?: {
+    newStudentEnrollments: boolean;
+    sessionReminders30Min: boolean;
+    payoutNotifications: boolean;
+    platformAnnouncements: boolean;
+    studentAtRiskAlerts: boolean;
+  };
 }
 
 export interface Program {
@@ -34,6 +55,7 @@ export interface Program {
   mentorName: string | null;
   batches: { name: string; time: string }[];
   levels: string[];
+  badge?: "most-popular" | "best-value" | null;
 }
 
 export interface Resource {
@@ -101,6 +123,23 @@ export interface Session {
   createdAt: string;
 }
 
+/** Journal entry written by a student */
+export interface JournalEntry {
+  id: string;
+  userId: string;
+  userName: string;
+  programId: string | null;
+  title: string;
+  content: string;
+  mood: string | null;           // emoji e.g. "😌"
+  feeling?: string | null;       // "Tired" | "Neutral" | "Good" | "Energised" | "Motivated"
+  rating?: number | null;        // 1-5 star session rating
+  visibility: "private" | "shared"; // shared = mentor can read
+  date: string;                  // YYYY-MM-DD
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Attendance record for a student in a session */
 export interface Attendance {
   id: string;
@@ -110,5 +149,36 @@ export interface Attendance {
   userName: string;
   present: boolean;
   date: string;       // YYYY-MM-DD
+  createdAt: string;
+}
+
+/** Autopayment setup stored per user */
+export interface AutopaymentSetup {
+  userId: string;
+  enabled: boolean;
+  method: "upi" | "card";
+  /** UPI ID if method === "upi" */
+  upiId?: string;
+  /** Last 4 digits of card if method === "card" */
+  last4?: string;
+  /** ISO date string of next scheduled charge */
+  nextChargeDate?: string;
+  /** Amount in paise */
+  nextChargeAmount?: number;
+  updatedAt: string;
+}
+
+/** A note posted by a mentor/guide to their students */
+export interface GuideNote {
+  id: string;
+  mentorId: string;
+  mentorName: string;
+  mentorPhotoURL: string | null;
+  programId: string;
+  /** null = broadcast to all students; userId string = personal note */
+  targetUserId: string | null;
+  targetUserName: string | null;
+  title: string;
+  content: string;
   createdAt: string;
 }

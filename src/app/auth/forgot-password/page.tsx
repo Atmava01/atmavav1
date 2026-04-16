@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader, Check } from "lucide-react";
+import { Loader, Check, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function ForgotPasswordPage() {
@@ -33,6 +33,17 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden" style={{ background: "#F6F4EF" }}>
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(92,107,87,0.08) 0%, transparent 60%)" }} />
 
+      <Link href="/" className="absolute top-7 left-7 z-10">
+        <motion.div
+          className="flex items-center justify-center w-9 h-9 rounded-full"
+          style={{ background: "rgba(44,43,41,0.06)", color: "#4A4845" }}
+          whileHover={{ background: "rgba(44,43,41,0.1)", color: "#2C2B29" }}
+          whileTap={{ scale: 0.94 }}
+        >
+          <ArrowLeft size={16} />
+        </motion.div>
+      </Link>
+
       <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2">
         <motion.span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.5rem", color: "#2C2B29", letterSpacing: "0.15em" }} whileHover={{ opacity: 0.6 }}>
           Atmava
@@ -46,12 +57,12 @@ export default function ForgotPasswordPage() {
               <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="text-center mb-10">
                   <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.2rem", fontWeight: 300, color: "#2C2B29" }}>Reset password</h1>
-                  <p className="text-sm mt-2" style={{ color: "#7A7771" }}>We'll send you a reset link</p>
+                  <p className="text-sm mt-2" style={{ color: "#4A4845" }}>We'll send you a reset link</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
-                    <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#7A7771" }}>Email address</label>
+                    <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#4A4845" }}>Email address</label>
                     <input
                       type="email" value={email} onChange={e => setEmail(e.target.value)}
                       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
@@ -76,10 +87,10 @@ export default function ForgotPasswordPage() {
                   <Check size={22} style={{ color: "#5C6B57" }} />
                 </motion.div>
                 <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", fontWeight: 300, color: "#2C2B29" }}>Check your inbox</h2>
-                <p className="mt-3 text-sm" style={{ color: "#7A7771" }}>
+                <p className="mt-3 text-sm" style={{ color: "#4A4845" }}>
                   We sent a reset link to <strong style={{ color: "#2C2B29" }}>{email}</strong>
                 </p>
-                <p className="mt-1 text-xs" style={{ color: "#7A7771" }}>Didn't receive it? Check your spam folder.</p>
+                <p className="mt-1 text-xs" style={{ color: "#4A4845" }}>Didn't receive it? Check your spam folder.</p>
               </motion.div>
             )}
           </AnimatePresence>

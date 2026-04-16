@@ -1,0 +1,160 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function isAuth()          { return request.auth != null; }
+    function isOwner(uid)      { return isAuth() && request.auth.uid == uid; }
+    function isAdmin()         { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"; }
+    function isMentor()        { return isAuth() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "mentor"; }
+    function isAdminOrMentor() { return isAdmin() || isMentor(); }
+
+    // ── Public landing content (read-only, no auth required) ──────────────────
+    match /programs/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /landingMentors/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /landingTestimonials/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── User profiles ──────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // Users can read and write their own profile; admins can read all.
+      // list is also permitted for authenticated users so the Circle "People"
+      // tab can fetch fellow members (role=user query in getCircleMembers).
+      allow get:    if isOwner(uid) || isAdmin();
+      allow list:   if isAuth();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Enrollments ────────────────────────────────────────────────────────────
+    match /enrollments/{id} {
+      allow read:   if isAuth() && (resource.data.userId == request.auth.uid || isAdminOrMentor());
+      allow list:   if isAdminOrMentor();
+      allow create: if isAuth();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Sessions ───────────────────────────────────────────────────────────────
+    match /sessions/{id} {
+      allow read:   if isAuth();
+      allow write:  if isAdminOrMentor();
+    }
+
+    // ── Attendance ─────────────────────────────────────────────────────────────
+    match /attendance/{id} {
+      allow read:   if isAuth() && (resource.data.userId == request.auth.uid || isAdminOrMentor());
+      allow list:   if isAuth();
+      allow create: if isAuth();
+      allow update: if isAdminOrMentor();
+      allow delete: if isAdmin();
+    }
+
+    // ── Journal entries ────────────────────────────────────────────────────────
+    match /journals/{id} {
+      // Owner can read/write their own entries
+      allow get:    if isAuth() && resource.data.userId == request.auth.uid;
+      allow list:   if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Payments ───────────────────────────────────────────────────────────────
+    match /payments/{id} {
+      allow read:   if isAuth() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list:   if isAdmin();
+      allow create: if isAuth();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Mood logs ──────────────────────────────────────────────────────────────
+    match /moodLogs/{id} {
+      allow read:   if isAuth() && resource.data.userId == request.auth.uid;
+      allow list:   if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
+    // ── Session chat ───────────────────────────────────────────────────────────
+    match /sessionChats/{sessionId}/messages/{msgId} {
+      allow read:   if isAuth();
+      allow create: if isAuth();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Mic requests ───────────────────────────────────────────────────────────
+    match /sessionMicRequests/{sessionId}/requests/{userId} {
+      allow read:   if isAuth() && (request.auth.uid == userId || isAdminOrMentor());
+      allow create: if isOwner(userId);
+      allow update: if isAdminOrMentor();
+      allow delete: if isOwner(userId) || isAdminOrMentor();
+    }
+
+    // ── Resources ─────────────────────────────────────────────────────────────
+    match /resources/{id} {
+      allow read: if isAuth();
+      allow write: if isAdminOrMentor();
+    }
+
+    // ── Mentor availability ────────────────────────────────────────────────────
+    match /mentorAvailability/{id} {
+      allow read: if isAuth();
+      allow write: if isAdminOrMentor();
+    }
+
+    // ── Circle (social feed) ──────────────────────────────────────────────────
+    match /circlePosts/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth();
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
+    match /circleComments/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.userId == request.auth.uid;
+    }
+
+    match /circleFollows/{id} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isAuth() && resource.data.followerId == request.auth.uid;
+    }
+
+    // ── Autopayment Setup ─────────────────────────────────────────────────────
+    match /autopaymentSetup/{userId} {
+      allow read:   if isOwner(userId) || isAdmin();
+      allow write:  if isOwner(userId);
+    }
+
+    // ── Guide Notes (mentor → student messages) ────────────────────────────────
+    match /guideNotes/{id} {
+      // Any authenticated user can read notes (student filters client-side)
+      allow read: if isAuth();
+      // Only mentors/admins can create, and must be the author
+      allow create: if isAdminOrMentor() && request.resource.data.mentorId == request.auth.uid;
+      // Only the author or an admin can delete
+      allow delete: if isAuth() && (resource.data.mentorId == request.auth.uid || isAdmin());
+      // Notes are immutable once posted
+      allow update: if false;
+    }
+
+  }
+}

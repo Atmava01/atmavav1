@@ -116,13 +116,13 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
         {/* Header */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <span className="text-xs tracking-[0.22em] uppercase block mb-2" style={{ color: featured ? "#5C6B57" : "#7A7771" }}>
+            <span className="text-xs tracking-[0.22em] uppercase block mb-2" style={{ color: featured ? "#5C6B57" : "#4A4845" }}>
               {prog.duration} Days
             </span>
             <h3 className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2C2B29", fontWeight: 400 }}>
               {prog.title}
             </h3>
-            <p className="text-sm mt-1" style={{ color: "#7A7771", fontStyle: "italic" }}>
+            <p className="text-sm mt-1" style={{ color: "#4A4845", fontStyle: "italic" }}>
               {SUBTITLES[prog.id] ?? ""}
             </p>
           </div>
@@ -147,14 +147,14 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
               <span className="text-3xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#2C2B29", fontWeight: 300 }}>
                 ₹{prog.price.toLocaleString("en-IN")}
               </span>
-              <span className="text-sm" style={{ color: "#7A7771" }}>/ program</span>
+              <span className="text-sm" style={{ color: "#4A4845" }}>/ program</span>
             </div>
           )}
         </div>
 
         <div className="w-full h-px mb-5" style={{ background: featured ? "rgba(92,107,87,0.15)" : "#E8E1D6" }} />
 
-        <p className="text-sm leading-relaxed mb-5 flex-1" style={{ color: "#7A7771", fontWeight: 300 }}>
+        <p className="text-sm leading-relaxed mb-5 flex-1" style={{ color: "#4A4845", fontWeight: 300 }}>
           {prog.description}
         </p>
 
@@ -178,7 +178,7 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
                     transition={{ delay: fi * 0.07 }}
                   >
                     <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: "#5C6B57" }} />
-                    <span className="text-sm" style={{ color: "#7A7771" }}>{f}</span>
+                    <span className="text-sm" style={{ color: "#4A4845" }}>{f}</span>
                   </motion.div>
                 ))}
               </div>
@@ -187,7 +187,7 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
         </AnimatePresence>
 
         {(prog.enrolledCount ?? 0) > 0 && (
-          <p className="text-xs mb-4" style={{ color: featured ? "rgba(92,107,87,0.7)" : "#7A7771" }}>
+          <p className="text-xs mb-4" style={{ color: featured ? "rgba(92,107,87,0.7)" : "#4A4845" }}>
             {prog.enrolledCount} people enrolled
           </p>
         )}
@@ -196,7 +196,7 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
         <div className="flex items-center justify-between mt-auto gap-4">
           <motion.button
             className="text-xs tracking-widest uppercase shrink-0"
-            style={{ color: "#7A7771" }}
+            style={{ color: "#4A4845" }}
             onClick={() => setExpanded(!expanded)}
             whileHover={{ color: "#2C2B29" }}
           >
@@ -218,7 +218,7 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
             <Link href={`/auth/signup?program=${prog.id}`}>
               <motion.button
                 className="px-5 py-2.5 rounded-xl text-xs tracking-widest uppercase shrink-0"
-                style={{ border: `1px solid ${featured ? "#5C6B57" : "#D4CCBF"}`, color: featured ? "#5C6B57" : "#7A7771", background: "transparent" }}
+                style={{ border: `1px solid ${featured ? "#5C6B57" : "#D4CCBF"}`, color: featured ? "#5C6B57" : "#4A4845", background: "transparent" }}
                 whileHover={{ background: featured ? "#5C6B57" : "#2C2B29", color: "#F6F4EF" }}
                 whileTap={{ scale: 0.97 }}
               >
@@ -232,7 +232,7 @@ function ProgramCard({ prog, i, featured, userProgramId, isLoggedIn, onBuyClick 
               className="px-5 py-2.5 rounded-xl text-xs tracking-widest uppercase shrink-0"
               style={{
                 border:     `1px solid ${featured ? "#5C6B57" : "#D4CCBF"}`,
-                color:      featured ? "#5C6B57" : "#7A7771",
+                color:      featured ? "#5C6B57" : "#4A4845",
                 background: "transparent",
               }}
               whileHover={{
@@ -333,7 +333,7 @@ function ProgramsSectionInner() {
           </motion.h2>
           <motion.p
             className="text-sm mt-4 max-w-sm mx-auto"
-            style={{ color: "#7A7771", fontWeight: 300 }}
+            style={{ color: "#4A4845", fontWeight: 300 }}
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
             transition={{ delay: 0.25 }}

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Loader } from "lucide-react";
+import { Eye, EyeOff, Loader, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Inner component (reads searchParams — must be inside Suspense) ───────────
@@ -33,12 +33,12 @@ function LoginInner() {
   // Already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.replace(isBuyFlow ? `/?buy=${programParam}` : "/dashboard");
+      router.replace(isBuyFlow ? `/programs?buy=${programParam}` : "/dashboard");
     }
   }, [user, authLoading, isBuyFlow, programParam, router]);
 
   const afterAuth = () => {
-    router.push(isBuyFlow ? `/?buy=${programParam}` : "/dashboard");
+    router.push(isBuyFlow ? `/programs?buy=${programParam}` : "/dashboard");
   };
 
   const formatError = (code: string) => {
@@ -116,11 +116,25 @@ function LoginInner() {
     boxShadow: focusedField === field ? "0 0 0 3px rgba(92,107,87,0.1)" : "none",
   });
 
+  // Show loader while auth state is resolving or redirect is in-flight (prevents form flash)
+  if (authLoading || user) {
+    return (
+      <div className="flex justify-center py-20">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          className="w-7 h-7 rounded-full border-2 border-t-transparent"
+          style={{ borderColor: "#5C6B57" }}
+        />
+      </div>
+    );
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9 }}
+      transition={{ duration: 0.3 }}
     >
       <div
         className="p-8 md:p-10 rounded-2xl"
@@ -135,7 +149,7 @@ function LoginInner() {
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.2rem", fontWeight: 300, color: "#2C2B29" }}>
             Welcome back
           </h1>
-          <p className="text-sm mt-2" style={{ color: "#7A7771" }}>
+          <p className="text-sm mt-2" style={{ color: "#4A4845" }}>
             {isBuyFlow ? "Sign in to complete your purchase" : "Return to your practice"}
           </p>
         </div>
@@ -175,13 +189,13 @@ function LoginInner() {
 
         <div className="flex items-center gap-3 mb-7">
           <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
-          <span className="text-xs tracking-widest uppercase" style={{ color: "#7A7771" }}>or</span>
+          <span className="text-xs tracking-widest uppercase" style={{ color: "#4A4845" }}>or</span>
           <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#7A7771" }}>Email</label>
+            <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#4A4845" }}>Email</label>
             <input
               type="email"
               value={email}
@@ -195,7 +209,7 @@ function LoginInner() {
           </div>
           <div>
             <div className="flex justify-between mb-2">
-              <label className="text-xs tracking-widest uppercase" style={{ color: "#7A7771" }}>Password</label>
+              <label className="text-xs tracking-widest uppercase" style={{ color: "#4A4845" }}>Password</label>
               <Link href="/auth/forgot-password">
                 <span className="text-xs" style={{ color: "#5C6B57" }}>Forgot password?</span>
               </Link>
@@ -212,7 +226,7 @@ function LoginInner() {
                 placeholder="••••••••"
               />
               <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2" onClick={() => setShowPass(!showPass)}>
-                {showPass ? <EyeOff size={15} style={{ color: "#7A7771" }} /> : <Eye size={15} style={{ color: "#7A7771" }} />}
+                {showPass ? <EyeOff size={15} style={{ color: "#4A4845" }} /> : <Eye size={15} style={{ color: "#4A4845" }} />}
               </button>
             </div>
           </div>
@@ -245,7 +259,7 @@ function LoginInner() {
                   onClick={handleResendVerification}
                   disabled={resendingVerification || resentVerification}
                   className="flex items-center gap-1.5 text-xs"
-                  style={{ color: resentVerification ? "#5C6B57" : "#7A7771" }}
+                  style={{ color: resentVerification ? "#5C6B57" : "#4A4845" }}
                 >
                   {resendingVerification
                     ? <><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}><Loader size={11} /></motion.div> Sending…</>
@@ -272,7 +286,7 @@ function LoginInner() {
         </form>
 
         <div className="mt-8 text-center">
-          <p className="text-sm" style={{ color: "#7A7771" }}>
+          <p className="text-sm" style={{ color: "#4A4845" }}>
             New to Atmava?{" "}
             <Link href={isBuyFlow ? `/auth/signup?program=${programParam}&action=buy` : "/auth/signup"}>
               <motion.span className="underline" style={{ color: "#5C6B57" }} whileHover={{ opacity: 0.7 }}>
@@ -291,6 +305,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden" style={{ background: "#F6F4EF" }}>
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(92,107,87,0.08) 0%, transparent 60%)" }} />
+
+      <Link href="/" className="absolute top-7 left-7 z-10">
+        <motion.div
+          className="flex items-center justify-center w-9 h-9 rounded-full"
+          style={{ background: "rgba(44,43,41,0.06)", color: "#4A4845" }}
+          whileHover={{ background: "rgba(44,43,41,0.1)", color: "#2C2B29" }}
+          whileTap={{ scale: 0.94 }}
+        >
+          <ArrowLeft size={16} />
+        </motion.div>
+      </Link>
 
       <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
         <motion.span

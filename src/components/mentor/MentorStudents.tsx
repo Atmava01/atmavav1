@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPrograms, getStudentsForProgram } from "@/lib/firestore";
+import { getMentorAssignmentSnapshot } from "@/lib/firestore";
 import type { Program, Enrollment, UserProfile } from "@/types";
 
 type StudentRow = { enrollment: Enrollment; userProfile: UserProfile };
 
 export function MentorStudents() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
 
   const [program, setProgram]   = useState<Program | null>(null);
   const [students, setStudents] = useState<StudentRow[]>([]);
@@ -24,15 +24,11 @@ export function MentorStudents() {
 
     async function load() {
       try {
-        const programs = await getPrograms();
+        const token = await user!.getIdToken();
+        const { program: myProgram, students: rows } = await getMentorAssignmentSnapshot(token);
         if (cancelled) return;
-        const myProgram = programs.find(p => p.mentorId === user!.uid) ?? null;
         setProgram(myProgram);
-
-        if (myProgram) {
-          const rows = await getStudentsForProgram(myProgram.id);
-          if (!cancelled) setStudents(rows);
-        }
+        setStudents(rows);
       } catch {
         // silently ignore
       } finally {
@@ -42,7 +38,7 @@ export function MentorStudents() {
 
     load();
     return () => { cancelled = true; };
-  }, [user?.uid]);
+  }, [user, userProfile?.name]);
 
   const batches = program?.batches.map(b => b.name) ?? [];
   const levels  = program?.levels ?? [];

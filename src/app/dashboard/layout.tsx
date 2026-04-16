@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { UserGuard } from "@/components/guards/UserGuard";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export const metadata: Metadata = {
   title: "Dashboard — Atmava",
@@ -7,10 +8,13 @@ export const metadata: Metadata = {
 };
 
 /**
- * Dashboard layout — enforces UserGuard at the segment level.
- * Every page under /dashboard is automatically protected.
- * Admins and Mentors are redirected to their own areas by UserGuard.
+ * Dashboard layout — enforces auth via UserGuard and wraps every dashboard
+ * sub-route (overview, sessions, profile, settings) in the shared shell.
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <UserGuard>{children}</UserGuard>;
+  return (
+    <UserGuard>
+      <DashboardShell>{children}</DashboardShell>
+    </UserGuard>
+  );
 }

@@ -15,7 +15,7 @@ function statusBadge(status: string) {
       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
       style={{
         background: active ? "rgba(92,107,87,0.15)" : "rgba(122,119,113,0.15)",
-        color: active ? "#5C6B57" : "#7A7771",
+        color: active ? "#5C6B57" : "#4A4845",
         border: `1px solid ${active ? "rgba(92,107,87,0.3)" : "rgba(122,119,113,0.3)"}`,
       }}
     >

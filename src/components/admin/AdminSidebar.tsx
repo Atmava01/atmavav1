@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart2, Users, BookOpen, Calendar, UserCheck, LogOut, LayoutDashboard, CreditCard, ClipboardList, Menu, X, Video } from "lucide-react";
+import { BarChart2, Users, BookOpen, Calendar, UserCheck, LogOut, LayoutDashboard, CreditCard, ClipboardList, Menu, X, Video, Layout } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { icon: ClipboardList,label: "Enrollments", id: "enrollments" },
   { icon: Video,        label: "Sessions",    id: "sessions"    },
   { icon: UserCheck,    label: "Mentors",     id: "mentors"     },
+  { icon: Layout,       label: "Landing Page",id: "landing"     },
 ];
 
 interface Props { active: string; setActive: (id: string) => void; }
@@ -49,9 +50,11 @@ export function AdminSidebar({ active, setActive }: Props) {
           className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4"
           style={{ height: "52px", background: "#2C2B29", borderBottom: "1px solid rgba(255,255,255,0.07)" }}
         >
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.15rem", color: "#F6F4EF", letterSpacing: "0.14em" }}>
-            Atmava
-          </span>
+          <Link href="/?preview=1">
+            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.15rem", color: "#F6F4EF", letterSpacing: "0.14em" }}>
+              Atmava
+            </span>
+          </Link>
           <div className="flex items-center gap-3">
             <p className="text-xs tracking-widest uppercase" style={{ color: "rgba(246,244,239,0.35)" }}>
               {currentLabel}
@@ -92,9 +95,11 @@ export function AdminSidebar({ active, setActive }: Props) {
         {/* Brand */}
         <div className="px-5 py-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
           <div>
-            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.3rem", color: "#F6F4EF", letterSpacing: "0.14em" }}>
-              Atmava
-            </span>
+            <Link href="/?preview=1">
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.3rem", color: "#F6F4EF", letterSpacing: "0.14em" }}>
+                Atmava
+              </span>
+            </Link>
             <p className="text-xs mt-0.5 tracking-widest uppercase" style={{ color: "rgba(246,244,239,0.35)" }}>
               Admin Panel
             </p>

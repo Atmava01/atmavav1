@@ -11,10 +11,11 @@ import { UsersPanel }       from "@/components/admin/UsersPanel";
 import { ProgramsPanel }    from "@/components/admin/ProgramsPanel";
 import { PaymentsPanel }    from "@/components/admin/PaymentsPanel";
 import { SessionsPanel }    from "@/components/admin/SessionsPanel";
-import { MentorsPanel }     from "@/components/admin/MentorsPanel";
-import { EnrollmentsPanel } from "@/components/admin/EnrollmentsPanel";
+import { MentorsPanel }      from "@/components/admin/MentorsPanel";
+import { EnrollmentsPanel }  from "@/components/admin/EnrollmentsPanel";
+import { LandingPagePanel }  from "@/components/admin/LandingPagePanel";
 
-type Panel = "overview" | "users" | "payments" | "programs" | "enrollments" | "sessions" | "mentors";
+type Panel = "overview" | "users" | "payments" | "programs" | "enrollments" | "sessions" | "mentors" | "landing";
 
 function renderPanel(active: Panel) {
   switch (active) {
@@ -25,6 +26,7 @@ function renderPanel(active: Panel) {
     case "enrollments": return <EnrollmentsPanel />;
     case "sessions":    return <SessionsPanel />;
     case "mentors":     return <MentorsPanel />;
+    case "landing":     return <LandingPagePanel />;
     default:            return <OverviewPanel />;
   }
 }
@@ -33,10 +35,10 @@ export default function AdminPage() {
   const [active, setActive] = useState<Panel>("overview");
 
   return (
-    <div className="min-h-screen" style={{ background: "#1A1917" }}>
+    <div className="min-h-screen" style={{ background: active === "overview" ? "#F6F4EF" : "#1A1917" }}>
       <AdminSidebar active={active} setActive={setActive as (v: string) => void} />
 
-      <main className="min-h-screen md:ml-[220px] pt-14 md:pt-0 px-4 py-5 md:px-10 md:py-12">
+      <main className={`min-h-screen md:ml-[220px] pt-14 md:pt-0 ${active === "overview" ? "p-0" : "px-4 py-5 md:px-10 md:py-12"}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
@@ -44,7 +46,7 @@ export default function AdminPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-            className="max-w-4xl"
+            className={active === "overview" ? "w-full" : "max-w-4xl"}
           >
             {renderPanel(active)}
           </motion.div>

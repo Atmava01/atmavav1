@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Loader, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader, Mail, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Inner component (reads searchParams — must be inside Suspense) ───────────
@@ -42,7 +42,7 @@ function SignupInner() {
         router.replace("/auth/verify-email");
         return;
       }
-      router.replace(isBuyFlow ? `/?buy=${programParam}` : "/dashboard");
+      router.replace(isBuyFlow ? `/programs?buy=${programParam}` : "/dashboard");
     }
   }, [user, authLoading, isBuyFlow, programParam, router, step]);
 
@@ -54,7 +54,7 @@ function SignupInner() {
       return;
     }
     // Google / Apple → already verified, proceed normally
-    router.replace(isBuyFlow ? `/?buy=${programParam}` : "/dashboard");
+    router.replace(isBuyFlow ? `/programs?buy=${programParam}` : "/dashboard");
   };
 
   const handleResendFromSignup = async () => {
@@ -134,6 +134,20 @@ function SignupInner() {
     boxShadow: focusedField === field ? "0 0 0 3px rgba(92,107,87,0.1)" : "none",
   });
 
+  // Show loader while auth state is resolving or redirect is in-flight (prevents form flash)
+  if (authLoading || (user && step !== 2)) {
+    return (
+      <div className="flex justify-center py-20">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+          className="w-7 h-7 rounded-full border-2 border-t-transparent"
+          style={{ borderColor: "#5C6B57" }}
+        />
+      </div>
+    );
+  }
+
   // ── Step 2: check-inbox screen ───────────────────────────────────────────
   if (step === 2) {
     return (
@@ -170,13 +184,13 @@ function SignupInner() {
         <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2rem", fontWeight: 300, color: "#2C2B29", marginBottom: "12px" }}>
           Check your inbox
         </h2>
-        <p className="text-sm mb-1" style={{ color: "#7A7771", lineHeight: 1.7 }}>
+        <p className="text-sm mb-1" style={{ color: "#4A4845", lineHeight: 1.7 }}>
           We sent a verification link to
         </p>
         <p className="text-sm font-medium mb-2" style={{ color: "#2C2B29" }}>
           {email}
         </p>
-        <p className="text-xs mb-8" style={{ color: "#7A7771" }}>
+        <p className="text-xs mb-8" style={{ color: "#4A4845" }}>
           Click the link in that email to activate your account.
         </p>
 
@@ -215,7 +229,7 @@ function SignupInner() {
         </AnimatePresence>
 
         <Link href="/auth/login">
-          <motion.span className="text-xs" style={{ color: "#7A7771" }} whileHover={{ color: "#5C6B57" }}>
+          <motion.span className="text-xs" style={{ color: "#4A4845" }} whileHover={{ color: "#5C6B57" }}>
             Back to sign in ↗
           </motion.span>
         </Link>
@@ -246,7 +260,7 @@ function SignupInner() {
           <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2.2rem", fontWeight: 300, color: "#2C2B29" }}>
             {isBuyFlow ? "Create your account" : "Begin your journey"}
           </h1>
-          <p className="text-sm mt-2" style={{ color: "#7A7771" }}>
+          <p className="text-sm mt-2" style={{ color: "#4A4845" }}>
             {isBuyFlow ? "Sign up to complete your purchase" : "Create your sacred space"}
           </p>
         </div>
@@ -288,7 +302,7 @@ function SignupInner() {
         {/* Divider */}
         <div className="flex items-center gap-3 mb-7">
           <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
-          <span className="text-xs tracking-widest uppercase" style={{ color: "#7A7771" }}>or</span>
+          <span className="text-xs tracking-widest uppercase" style={{ color: "#4A4845" }}>or</span>
           <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
         </div>
 
@@ -299,7 +313,7 @@ function SignupInner() {
             { id: "email", label: "Email",     type: "email", val: email, set: setEmail, ph: "you@example.com" },
           ].map(f => (
             <div key={f.id}>
-              <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#7A7771" }}>{f.label}</label>
+              <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#4A4845" }}>{f.label}</label>
               <input
                 type={f.type}
                 value={f.val}
@@ -314,7 +328,7 @@ function SignupInner() {
           ))}
 
           <div>
-            <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#7A7771" }}>Password</label>
+            <label className="block text-xs tracking-widest uppercase mb-2" style={{ color: "#4A4845" }}>Password</label>
             <div className="relative">
               <input
                 type={showPass ? "text" : "password"}
@@ -328,8 +342,8 @@ function SignupInner() {
               />
               <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2" onClick={() => setShowPass(!showPass)}>
                 {showPass
-                  ? <EyeOff size={15} style={{ color: "#7A7771" }} />
-                  : <Eye    size={15} style={{ color: "#7A7771" }} />}
+                  ? <EyeOff size={15} style={{ color: "#4A4845" }} />
+                  : <Eye    size={15} style={{ color: "#4A4845" }} />}
               </button>
             </div>
           </div>
@@ -363,7 +377,7 @@ function SignupInner() {
         </form>
 
         <div className="mt-8 text-center">
-          <p className="text-sm" style={{ color: "#7A7771" }}>
+          <p className="text-sm" style={{ color: "#4A4845" }}>
             Already a practitioner?{" "}
             <Link href={isBuyFlow ? `/auth/login?program=${programParam}&action=buy` : "/auth/login"}>
               <motion.span className="underline" style={{ color: "#5C6B57" }} whileHover={{ opacity: 0.7 }}>
@@ -383,6 +397,18 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-6 relative overflow-hidden" style={{ background: "#F6F4EF" }}>
       {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(92,107,87,0.08) 0%, transparent 60%)" }} />
+
+      {/* Home arrow */}
+      <Link href="/" className="absolute top-7 left-7 z-10">
+        <motion.div
+          className="flex items-center justify-center w-9 h-9 rounded-full"
+          style={{ background: "rgba(44,43,41,0.06)", color: "#4A4845" }}
+          whileHover={{ background: "rgba(44,43,41,0.1)", color: "#2C2B29" }}
+          whileTap={{ scale: 0.94 }}
+        >
+          <ArrowLeft size={16} />
+        </motion.div>
+      </Link>
 
       {/* Logo */}
       <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-10">

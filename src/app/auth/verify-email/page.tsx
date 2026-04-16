@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Loader } from "lucide-react";
+import { Mail, Loader, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 
@@ -93,6 +93,18 @@ export default function VerifyEmailPage() {
         style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(92,107,87,0.08) 0%, transparent 60%)" }}
       />
 
+      {/* Home arrow */}
+      <Link href="/" className="absolute top-7 left-7 z-10">
+        <motion.div
+          className="flex items-center justify-center w-9 h-9 rounded-full"
+          style={{ background: "rgba(44,43,41,0.06)", color: "#4A4845" }}
+          whileHover={{ background: "rgba(44,43,41,0.1)", color: "#2C2B29" }}
+          whileTap={{ scale: 0.94 }}
+        >
+          <ArrowLeft size={16} />
+        </motion.div>
+      </Link>
+
       {/* Logo */}
       <Link href="/" className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
         <motion.span
@@ -149,13 +161,13 @@ export default function VerifyEmailPage() {
           </h1>
 
           {/* Body text */}
-          <p className="text-sm mb-1" style={{ color: "#7A7771", lineHeight: 1.7 }}>
+          <p className="text-sm mb-1" style={{ color: "#4A4845", lineHeight: 1.7 }}>
             We sent a verification link to
           </p>
           <p className="text-sm font-medium mb-2" style={{ color: "#2C2B29" }}>
             {user.email}
           </p>
-          <p className="text-xs mb-8" style={{ color: "#7A7771" }}>
+          <p className="text-xs mb-8" style={{ color: "#4A4845" }}>
             Click the link in that email, then come back here.
           </p>
 
@@ -191,7 +203,7 @@ export default function VerifyEmailPage() {
           {/* Divider */}
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
-            <span className="text-xs tracking-widest uppercase" style={{ color: "#7A7771" }}>or</span>
+            <span className="text-xs tracking-widest uppercase" style={{ color: "#4A4845" }}>or</span>
             <div className="flex-1 h-px" style={{ background: "#D4CCBF" }} />
           </div>
 
@@ -234,7 +246,7 @@ export default function VerifyEmailPage() {
           <button
             onClick={handleSignOut}
             className="text-xs mt-2"
-            style={{ color: "#7A7771" }}
+            style={{ color: "#4A4845" }}
           >
             <motion.span whileHover={{ color: "#5C6B57" }}>
               Sign out and use a different account ↗

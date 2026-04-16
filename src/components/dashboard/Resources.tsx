@@ -58,7 +58,7 @@ export function Resources() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm mb-0.5" style={{ color: "#2C2B29" }}>{res.title}</p>
-                    <p className="text-xs" style={{ color: "#7A7771" }}>{res.description} · {res.size}</p>
+                    <p className="text-xs" style={{ color: "#4A4845" }}>{res.description} · {res.size}</p>
                   </div>
                   <motion.a
                     href={res.url} target="_blank" rel="noopener noreferrer"

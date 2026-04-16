@@ -1,11 +1,14 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { getLandingMentors, type LandingMentor } from "@/lib/firestore";
 
-const mentors = [
+const FALLBACK: LandingMentor[] = [
   {
+    id: "jagadish",
     name: "Jagadish",
+    photoURL: "",
     paras: [
       "Jagadish is a dedicated trainer at Ātmava, guiding individuals through the deeper dialogue between Soma and Manas, the body's innate intelligence and the mind's quiet clarity. With a grounded, experiential approach, he helps participants reconnect with their physical sensations, emotional patterns, and mental stillness, creating space for realignment and inner balance.",
       "His sessions blend mindful movement, breathwork, and contemplative practices, encouraging people to listen to the body as a teacher while cultivating a calmer, steadier mind. Jagadish's focus is not on performance or perfection, but on presence — helping each person discover a more harmonious relationship between what the body feels and what the mind experiences.",
@@ -13,7 +16,9 @@ const mentors = [
     ],
   },
   {
+    id: "leeza",
     name: "Leeza Chandy",
+    photoURL: "",
     paras: [
       "Leeza brings a warm, intuitive presence to Ātmava, offering a practice that gently bridges movement, awareness, and emotional grounding. Her work is centred on helping individuals reconnect with themselves through subtle bodywork, conscious breath, and mindful pauses that create space for reflection and release.",
       "With a natural ability to sense the needs of a group, Leeza designs sessions that are supportive, fluid, and deeply personal. She encourages participants to slow down, notice their inner rhythms, and build a more compassionate connection with their physical and emotional wellbeing.",
@@ -22,8 +27,85 @@ const mentors = [
   },
 ];
 
+function MentorPhoto({ url, name }: { url?: string; name: string }) {
+  const [loaded, setLoaded] = useState(false);
+
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div
+      className="relative flex-shrink-0 rounded-full overflow-hidden"
+      style={{ width: "72px", height: "72px" }}
+    >
+      {!url ? (
+        /* No photo — initials with radial gradient background */
+        <motion.div
+          className="w-full h-full rounded-full flex items-center justify-center"
+          style={{
+            background: "radial-gradient(circle at 35% 35%, #7A8C74, #3D4A39)",
+            border: "1px solid rgba(92,107,87,0.35)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 16px rgba(44,43,41,0.15)",
+          }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <span
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.35rem",
+              fontWeight: 500,
+              color: "rgba(246,244,239,0.9)",
+              letterSpacing: "0.06em",
+              lineHeight: 1,
+              userSelect: "none",
+            }}
+          >
+            {initials}
+          </span>
+        </motion.div>
+      ) : (
+        /* Has photo — shimmer skeleton until loaded */
+        <>
+          <AnimatePresence>
+            {!loaded && (
+              <motion.div
+                key="skeleton"
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: "linear-gradient(110deg, #D4CCBF 30%, #E8E1D6 50%, #D4CCBF 70%)",
+                  backgroundSize: "200% 100%",
+                }}
+                animate={{ backgroundPosition: ["200% 0", "-200% 0"] }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "linear" }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </AnimatePresence>
+          <motion.img
+            src={url}
+            alt={name}
+            className="w-full h-full object-cover rounded-full"
+            style={{ border: "1px solid rgba(212,204,191,0.6)" }}
+            onLoad={() => setLoaded(true)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: loaded ? 1 : 0 }}
+            transition={{ duration: 0.3 }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Individual mentor card — each gets its own hook-safe ref */
-function MentorCard({ mentor, delay }: { mentor: typeof mentors[0]; delay: number }) {
+function MentorCard({ mentor, delay }: { mentor: LandingMentor; delay: number }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
@@ -53,21 +135,30 @@ function MentorCard({ mentor, delay }: { mentor: typeof mentors[0]; delay: numbe
         transition={{ duration: 1, delay: delay + 0.15 }}
       />
 
-      {/* Name */}
-      <motion.h3
-        style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "clamp(1.8rem, 3vw, 2.4rem)",
-          fontWeight: 300,
-          color: "#2C2B29",
-          marginBottom: "0.5rem",
-        }}
-        initial={{ opacity: 0, y: 10 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7, delay: delay + 0.1 }}
-      >
-        {mentor.name}
-      </motion.h3>
+      {/* Photo + Name row */}
+      <div className="flex items-center gap-4 mb-2">
+        <motion.div
+          className="flex-shrink-0"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={inView ? { opacity: 1, scale: 1 } : {}}
+          transition={{ duration: 0.5, delay: delay + 0.05 }}
+        >
+          <MentorPhoto url={mentor.photoURL} name={mentor.name} />
+        </motion.div>
+        <motion.h3
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "clamp(1.8rem, 3vw, 2.4rem)",
+            fontWeight: 300,
+            color: "#2C2B29",
+          }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: delay + 0.1 }}
+        >
+          {mentor.name}
+        </motion.h3>
+      </div>
 
       {/* Thin green separator */}
       <motion.div
@@ -90,7 +181,7 @@ function MentorCard({ mentor, delay }: { mentor: typeof mentors[0]; delay: numbe
           <motion.p
             key={j}
             className="text-sm leading-[1.9]"
-            style={{ color: "#7A7771", fontWeight: 300 }}
+            style={{ color: "#4A4845", fontWeight: 300 }}
             initial={{ opacity: 0, y: 8 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, delay: delay + 0.3 + j * 0.1 }}
@@ -116,6 +207,13 @@ function MentorCard({ mentor, delay }: { mentor: typeof mentors[0]; delay: numbe
 export function MentorsSection() {
   const headerRef = useRef(null);
   const headerInView = useInView(headerRef, { once: true, margin: "-80px" });
+  const [mentors, setMentors] = useState<LandingMentor[]>(FALLBACK);
+
+  useEffect(() => {
+    getLandingMentors().then(data => {
+      if (data.length > 0) setMentors(data);
+    }).catch(() => {});
+  }, []);
 
   return (
     <section className="py-32 px-6 relative overflow-hidden" style={{ background: "#F6F4EF" }}>

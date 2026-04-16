@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Link from "next/link";
+import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
@@ -66,16 +65,16 @@ export function HeroSection() {
 
       {/* Main content */}
       <motion.div
-        className="relative z-10 text-center px-6 max-w-3xl"
+        className="relative z-10 text-center px-6 max-w-3xl mx-auto w-full"
         style={{ y, opacity }}
       >
         {/* Eyebrow */}
         <motion.p
           className="text-xs tracking-[0.3em] uppercase mb-8"
           style={{ color: "#5C6B57" }}
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.4, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
         >
           Awareness · Stillness · Mastery
         </motion.p>
@@ -89,10 +88,11 @@ export function HeroSection() {
             fontWeight: 300,
             color: "#2C2B29",
             letterSpacing: "0.12em",
+            marginLeft: "-0.25em",
           }}
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
         >
           Atmava
         </motion.h1>
@@ -100,55 +100,55 @@ export function HeroSection() {
         {/* Subtext */}
         <motion.p
           className="text-base leading-relaxed max-w-md mx-auto mb-12"
-          style={{ color: "#7A7771", fontWeight: 300, fontStyle: "italic" }}
-          initial={{ opacity: 0, y: 20 }}
+          style={{ color: "#4A4845", fontWeight: 300, fontStyle: "italic" }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.65, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={{ duration: 0.4, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
         >
-          Still the mind. Master the self. A guided journey inward — 30, 60, or 90 days of sacred practice and live mentorship.
+          Guided meditation programs for clarity, stillness, and self-mastery.
         </motion.p>
 
         {/* CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.85 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
         >
-          <Link href="/programs">
-            <motion.button
-              className="relative px-9 py-4 text-sm tracking-[0.18em] uppercase rounded-2xl overflow-hidden"
-              style={{
-                border: "1px solid #5C6B57",
-                color: "#5C6B57",
-                background: "transparent",
-                letterSpacing: "0.15em",
-              }}
-              whileHover={{
-                borderColor: "#5C6B57",
-                color: "#F6F4EF",
-                backgroundColor: "#5C6B57",
-                boxShadow: "0 0 28px rgba(92, 107, 87, 0.22)",
-              }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ duration: 0.3 }}
-            >
-              Begin Your Journey
-            </motion.button>
-          </Link>
+          <motion.button
+            className="relative px-9 py-4 text-sm tracking-[0.18em] uppercase rounded-2xl overflow-hidden"
+            style={{
+              border: "1px solid #5C6B57",
+              color: "#5C6B57",
+              background: "transparent",
+              letterSpacing: "0.15em",
+            }}
+            whileHover={{
+              borderColor: "#5C6B57",
+              color: "#F6F4EF",
+              backgroundColor: "#5C6B57",
+              boxShadow: "0 0 28px rgba(92, 107, 87, 0.22)",
+            }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => document.getElementById("cta")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Begin Your Journey
+          </motion.button>
         </motion.div>
       </motion.div>
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5, duration: 0.8 }}
+        transition={{ delay: 0.8, duration: 0.4 }}
         style={{ opacity }}
+        onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
       >
         <motion.span
           className="text-xs tracking-[0.2em] uppercase"
-          style={{ color: "#7A7771" }}
+          style={{ color: "#4A4845" }}
           animate={{ opacity: [0.4, 0.9, 0.4] }}
           transition={{ duration: 2.5, repeat: Infinity }}
         >
@@ -158,7 +158,7 @@ export function HeroSection() {
           animate={{ y: [0, 6, 0] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         >
-          <ChevronDown size={14} style={{ color: "#7A7771" }} />
+          <ChevronDown size={14} style={{ color: "#4A4845" }} />
         </motion.div>
       </motion.div>
     </section>

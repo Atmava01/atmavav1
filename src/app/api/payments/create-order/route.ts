@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Program not found." }, { status: 404 });
   }
   const programData = programDoc.data();
-  // Price stored in paise (INR × 100). Never trusted from client.
-  const amountPaise = programData?.price as number | undefined;
+  // Price stored in rupees. Razorpay requires paise (× 100). Never trusted from client.
+  const priceRupees = programData?.price as number | undefined;
+  const amountPaise = priceRupees ? Math.round(priceRupees * 100) : undefined;
   if (!amountPaise || amountPaise <= 0) {
     return NextResponse.json({ error: "Invalid program price." }, { status: 400 });
   }

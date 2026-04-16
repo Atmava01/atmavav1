@@ -10,6 +10,7 @@ export function CTASection() {
 
   return (
     <section
+      id="cta"
       className="py-40 px-6 relative overflow-hidden"
       style={{ background: "#F6F4EF" }}
       ref={ref}
@@ -36,6 +37,7 @@ export function CTASection() {
           style={{ color: "#5C6B57" }}
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.3 }}
         >
           Begin Now
         </motion.p>
@@ -48,9 +50,9 @@ export function CTASection() {
             color: "#2C2B29",
             lineHeight: 1.15,
           }}
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.9, delay: 0.1 }}
+          transition={{ duration: 0.4, delay: 0.08 }}
         >
           The path home<br />
           <em>is already within you</em>
@@ -58,18 +60,18 @@ export function CTASection() {
 
         <motion.p
           className="mt-6 mb-14 text-base leading-relaxed"
-          style={{ color: "#7A7771", fontWeight: 300 }}
-          initial={{ opacity: 0, y: 16 }}
+          style={{ color: "#4A4845", fontWeight: 300 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.25 }}
+          transition={{ duration: 0.35, delay: 0.15 }}
         >
           Join Atmava and begin the most meaningful journey of your life.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.97 }}
           animate={inView ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          transition={{ duration: 0.35, delay: 0.22 }}
         >
           <Link href="/auth/signup">
             <motion.button
@@ -86,17 +88,17 @@ export function CTASection() {
               whileHover={{ scale: 1.04, boxShadow: "0 8px 32px rgba(92,107,87,0.3)" }}
               whileTap={{ scale: 0.97 }}
             >
-              Start Your Practice
+              Begin Your Practice
             </motion.button>
           </Link>
         </motion.div>
 
         <motion.p
           className="mt-8 text-xs tracking-widest uppercase"
-          style={{ color: "#7A7771" }}
+          style={{ color: "#4A4845" }}
           initial={{ opacity: 0 }}
           animate={inView ? { opacity: 1 } : {}}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.3 }}
         >
           Live sessions Mon–Sat · Morning & Evening batches
         </motion.p>

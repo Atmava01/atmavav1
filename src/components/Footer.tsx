@@ -3,43 +3,14 @@
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Instagram, Youtube, Twitter, Mail, ArrowUpRight } from "lucide-react";
+import { Instagram, ArrowUpRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-const NAV_COLS = [
-  {
-    label: "Journey",
-    links: [
-      { href: "/", text: "Home" },
-      { href: "/about", text: "About" },
-      { href: "/programs", text: "Programs" },
-      { href: "/programs#faq", text: "FAQ" },
-    ],
-  },
-  {
-    label: "Practice",
-    links: [
-      { href: "/auth/signup", text: "Begin Now" },
-      { href: "/auth/login", text: "Sign In" },
-      { href: "/dashboard", text: "Dashboard" },
-      { href: "/dashboard", text: "My Sessions" },
-    ],
-  },
-  {
-    label: "Company",
-    links: [
-      { href: "/about", text: "Our Philosophy" },
-      { href: "/about#team", text: "The Team" },
-      { href: "/about#mentors", text: "Mentors" },
-      { href: "mailto:hello@atmava.com", text: "Contact" },
-    ],
-  },
-];
-
-const SOCIALS = [
-  { icon: Instagram, label: "Instagram", href: "https://instagram.com" },
-  { icon: Youtube,   label: "YouTube",   href: "https://youtube.com" },
-  { icon: Twitter,   label: "Twitter",   href: "https://twitter.com" },
-  { icon: Mail,      label: "Email",     href: "mailto:hello@atmava.com" },
+const COMPANY_LINKS = [
+  { href: "mailto:info@atmava.com", text: "Contact" },
+  { href: "/privacy",  text: "Privacy" },
+  { href: "/terms",    text: "Terms" },
+  { href: "/cookies",  text: "Cookies" },
 ];
 
 const PILLARS = ["Awareness", "Stillness", "Presence", "Mastery"];
@@ -47,6 +18,10 @@ const PILLARS = ["Awareness", "Stillness", "Presence", "Mastery"];
 export function Footer() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
+  const { user } = useAuth();
+
+  const ctaHref  = user ? "/dashboard" : "/auth/signup";
+  const ctaLabel = user ? "Go to Dashboard" : "Begin Your Journey";
 
   return (
     <footer
@@ -74,7 +49,7 @@ export function Footer() {
 
       {/* Upper section */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 pt-20 pb-14">
-        <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1fr_1fr] gap-12 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1.6fr_1fr_1fr] gap-12 md:gap-8">
 
           {/* Brand column */}
           <div>
@@ -103,6 +78,27 @@ export function Footer() {
               A sacred space for those ready to return to themselves. Not self-improvement — self-recognition.
             </motion.p>
 
+            {/* Instagram */}
+            <motion.div
+              className="mb-6"
+              initial={{ opacity: 0, y: 8 }}
+              animate={inView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.25 }}
+            >
+              <motion.a
+                href="https://www.instagram.com/atmava.way"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="inline-flex items-center gap-2"
+                style={{ color: "rgba(246,244,239,0.45)" }}
+                whileHover={{ color: "#F6F4EF" }}
+                transition={{ duration: 0.2 }}
+              >
+                <Instagram size={15} />
+              </motion.a>
+            </motion.div>
+
             {/* Pillars */}
             <motion.div
               className="flex flex-wrap gap-2 mb-8"
@@ -126,93 +122,75 @@ export function Footer() {
                 </motion.span>
               ))}
             </motion.div>
-
-            {/* Socials */}
-            <motion.div
-              className="flex gap-3"
-              initial={{ opacity: 0, y: 8 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: 0.3 }}
-            >
-              {SOCIALS.map(({ icon: Icon, label, href }) => (
-                <motion.a
-                  key={label}
-                  href={href}
-                  target={href.startsWith("mailto") ? undefined : "_blank"}
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{
-                    background: "rgba(246,244,239,0.06)",
-                    border: "1px solid rgba(246,244,239,0.08)",
-                    color: "rgba(246,244,239,0.45)",
-                  }}
-                  whileHover={{
-                    background: "rgba(92,107,87,0.2)",
-                    borderColor: "rgba(92,107,87,0.4)",
-                    color: "#7A8C74",
-                    scale: 1.05,
-                  }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Icon size={14} />
-                </motion.a>
-              ))}
-            </motion.div>
           </div>
 
-          {/* Nav columns */}
-          {NAV_COLS.map((col, ci) => (
-            <motion.div
-              key={col.label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.12 + ci * 0.08 }}
-            >
-              <p className="text-[10px] tracking-[0.3em] uppercase mb-5" style={{ color: "#7A8C74" }}>
-                {col.label}
-              </p>
-              <div className="flex flex-col gap-3">
-                {col.links.map(({ href, text }) => {
-                  const isExternal = href.startsWith("mailto") || href.startsWith("http");
-                  return (
-                    <motion.div
-                      key={text}
-                      className="group flex items-center gap-1"
-                      whileHover="hover"
-                    >
-                      {isExternal ? (
-                        <a href={href} className="flex items-center gap-1">
-                          <motion.span
-                            className="text-sm"
-                            style={{ color: "rgba(246,244,239,0.45)", fontWeight: 300 }}
-                            variants={{ hover: { color: "#F6F4EF", x: 2 } }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            {text}
-                          </motion.span>
-                          <motion.div variants={{ hover: { opacity: 1, x: 2 } }} initial={{ opacity: 0 }}>
-                            <ArrowUpRight size={11} style={{ color: "#7A8C74" }} />
-                          </motion.div>
-                        </a>
-                      ) : (
-                        <Link href={href} className="flex items-center gap-1">
-                          <motion.span
-                            className="text-sm"
-                            style={{ color: "rgba(246,244,239,0.45)", fontWeight: 300 }}
-                            variants={{ hover: { color: "#F6F4EF", x: 2 } }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            {text}
-                          </motion.span>
-                        </Link>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ))}
+          {/* Practice column — single CTA button */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.12 }}
+          >
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-5" style={{ color: "#7A8C74" }}>
+              Practice
+            </p>
+            <Link href={ctaHref} className="flex items-center gap-1">
+              <motion.span
+                className="text-sm"
+                style={{ color: "rgba(246,244,239,0.45)", fontWeight: 300 }}
+                whileHover={{ color: "#F6F4EF", x: 2 }}
+                transition={{ duration: 0.2 }}
+              >
+                {ctaLabel}
+              </motion.span>
+            </Link>
+          </motion.div>
+
+          {/* Company column */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.2 }}
+          >
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-5" style={{ color: "#7A8C74" }}>
+              Company
+            </p>
+            <div className="flex flex-col gap-3">
+              {COMPANY_LINKS.map(({ href, text }) => {
+                const isExternal = href.startsWith("mailto") || href.startsWith("http");
+                return (
+                  <motion.div key={text} className="group flex items-center gap-1" whileHover="hover">
+                    {isExternal ? (
+                      <a href={href} className="flex items-center gap-1">
+                        <motion.span
+                          className="text-sm"
+                          style={{ color: "rgba(246,244,239,0.45)", fontWeight: 300 }}
+                          variants={{ hover: { color: "#F6F4EF", x: 2 } }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {text}
+                        </motion.span>
+                        <motion.div variants={{ hover: { opacity: 1, x: 2 } }} initial={{ opacity: 0 }}>
+                          <ArrowUpRight size={11} style={{ color: "#7A8C74" }} />
+                        </motion.div>
+                      </a>
+                    ) : (
+                      <Link href={href} className="flex items-center gap-1">
+                        <motion.span
+                          className="text-sm"
+                          style={{ color: "rgba(246,244,239,0.45)", fontWeight: 300 }}
+                          variants={{ hover: { color: "#F6F4EF", x: 2 } }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {text}
+                        </motion.span>
+                      </Link>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+
         </div>
       </div>
 
@@ -250,25 +228,15 @@ export function Footer() {
             Awareness · Stillness · Mastery
           </motion.p>
 
-          <motion.div
-            className="flex gap-5"
+          <motion.p
+            className="text-xs"
+            style={{ color: "rgba(246,244,239,0.25)", letterSpacing: "0.04em" }}
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
             transition={{ delay: 0.65 }}
           >
-            {[["Privacy", "#"], ["Terms", "#"], ["Cookies", "#"]].map(([label, href]) => (
-              <Link key={label} href={href}>
-                <motion.span
-                  className="text-xs"
-                  style={{ color: "rgba(246,244,239,0.25)" }}
-                  whileHover={{ color: "rgba(246,244,239,0.6)" }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {label}
-                </motion.span>
-              </Link>
-            ))}
-          </motion.div>
+            Made with intention.
+          </motion.p>
         </div>
       </div>
     </footer>

@@ -16,6 +16,7 @@ import {
   getFirestore,
   memoryLocalCache,
 } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // ── Config ───────────────────────────────────────────────────────────────────
 // These are public client-side keys — safe to commit / expose in the browser.
@@ -55,5 +56,8 @@ export const db = (() => {
     return getFirestore(app);
   }
 })();
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+export const storage = getStorage(app);
 
 export default app;

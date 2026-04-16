@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -34,7 +35,7 @@ function TimelineItem({ item, i }: { item: typeof timeline[0]; i: number }) {
             className="mt-2 w-px"
             initial={{ scaleY: 0, opacity: 0 }}
             animate={inView ? { scaleY: 1, opacity: 1 } : {}}
-            transition={{ duration: 0.8, delay: i * 0.1 + 0.2 }}
+            transition={{ duration: 0.35, delay: i * 0.04 + 0.08 }}
             style={{ transformOrigin: "top", background: "#D4CCBF", minHeight: "60px", width: "1px" }}
           />
         )}
@@ -45,7 +46,7 @@ function TimelineItem({ item, i }: { item: typeof timeline[0]; i: number }) {
         className="pb-10"
         initial={{ opacity: 0, x: -20 }}
         animate={inView ? { opacity: 1, x: 0 } : {}}
-        transition={{ duration: 0.7, delay: i * 0.1 + 0.1 }}
+        transition={{ duration: 0.3, delay: i * 0.04 + 0.05 }}
       >
         <span className="text-xs tracking-widest uppercase block mb-1" style={{ color: "#5C6B57" }}>{item.year}</span>
         <h3
@@ -54,7 +55,7 @@ function TimelineItem({ item, i }: { item: typeof timeline[0]; i: number }) {
         >
           {item.event}
         </h3>
-        <p className="text-sm leading-relaxed" style={{ color: "#7A7771", fontWeight: 300 }}>{item.desc}</p>
+        <p className="text-sm leading-relaxed" style={{ color: "#4A4845", fontWeight: 300 }}>{item.desc}</p>
       </motion.div>
     </div>
   );
@@ -96,20 +97,14 @@ export default function AboutPage() {
           />
         </motion.div>
 
-        <motion.div
-          className="relative z-10 text-center px-6 max-w-3xl"
-          style={{ y: heroY }}
-        >
-          <motion.p
+        <div className="relative z-10 text-center px-6 max-w-3xl">
+          <p
             className="text-xs tracking-[0.28em] uppercase mb-6"
             style={{ color: "#5C6B57" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.2 }}
           >
             Our Story
-          </motion.p>
-          <motion.h1
+          </p>
+          <h1
             style={{
               fontFamily: "'Cormorant Garamond', serif",
               fontSize: "clamp(3rem, 7vw, 6rem)",
@@ -117,23 +112,17 @@ export default function AboutPage() {
               color: "#2C2B29",
               lineHeight: 1.1,
             }}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.35 }}
           >
             Born from<br />
             <em>the silence</em>
-          </motion.h1>
-          <motion.p
+          </h1>
+          <p
             className="mt-6 text-base leading-relaxed max-w-lg mx-auto"
-            style={{ color: "#7A7771", fontWeight: 300 }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.55 }}
+            style={{ color: "#4A4845", fontWeight: 300 }}
           >
             Atmava was created for those who sense there is something deeper — and are ready to discover it.
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
       </section>
 
       {/* Mission */}
@@ -161,13 +150,13 @@ export default function AboutPage() {
                 fontFamily: i < 2 ? "'Cormorant Garamond', serif" : "Inter, sans-serif",
                 fontSize: i < 2 ? "clamp(1.5rem, 3vw, 2.2rem)" : "1rem",
                 fontWeight: 300,
-                color: i < 2 ? "#2C2B29" : "#7A7771",
+                color: i < 2 ? "#2C2B29" : "#4A4845",
                 lineHeight: i < 2 ? 1.35 : 1.8,
                 fontStyle: i === 1 ? "italic" : "normal",
               }}
               initial={{ opacity: 0, y: 20 }}
               animate={missionInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.85, delay: 0.1 + i * 0.15 }}
+              transition={{ duration: 0.35, delay: 0.1 + i * 0.06 }}
             >
               {para}
             </motion.p>
@@ -176,7 +165,7 @@ export default function AboutPage() {
       </section>
 
       {/* Values grid */}
-      <section className="py-28 px-6" style={{ background: "#F6F4EF" }}>
+      <section id="team" className="py-28 px-6" style={{ background: "#F6F4EF" }}>
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-px" style={{ border: "1px solid #D4CCBF", borderRadius: "16px", overflow: "hidden" }}>
             {[
@@ -191,7 +180,7 @@ export default function AboutPage() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.7, delay: i * 0.12 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
                 whileHover={{ background: "#E8E1D6" }}
               >
                 <p className="text-xs tracking-widest uppercase mb-4" style={{ color: "#5C6B57" }}>0{i + 1}</p>
@@ -201,7 +190,7 @@ export default function AboutPage() {
                 >
                   {v.label}
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "#7A7771", fontWeight: 300 }}>{v.desc}</p>
+                <p className="text-sm leading-relaxed" style={{ color: "#4A4845", fontWeight: 300 }}>{v.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -230,7 +219,7 @@ export default function AboutPage() {
               }}
               initial={{ opacity: 0, y: 16 }}
               animate={timelineInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.7, delay: 0.1 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
             >
               How we arrived here
             </motion.h2>
@@ -242,7 +231,49 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <MentorsSection />
+      <div id="mentors">
+        <MentorsSection />
+      </div>
+
+      {/* CTA */}
+      <section className="py-32 px-6 relative overflow-hidden" style={{ background: "#2C2B29" }}>
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse at 50% 60%, rgba(92,107,87,0.15) 0%, transparent 65%)" }}
+        />
+        <div className="max-w-2xl mx-auto text-center relative z-10">
+          <p className="text-xs tracking-[0.28em] uppercase mb-6" style={{ color: "#7A8C74" }}>
+            Begin Now
+          </p>
+          <h2
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(2.4rem, 5vw, 4rem)",
+              fontWeight: 300,
+              color: "#F6F4EF",
+              lineHeight: 1.2,
+              marginBottom: "1.5rem",
+            }}
+          >
+            Ready to return<br />
+            <em>to yourself?</em>
+          </h2>
+          <p className="text-sm leading-relaxed mb-12 max-w-md mx-auto" style={{ color: "rgba(246,244,239,0.5)", fontWeight: 300 }}>
+            60 and 90-day guided programs. Live daily sessions. Morning and evening batches.
+          </p>
+          <Link href="/programs">
+            <motion.button
+              className="px-10 py-4 text-sm tracking-[0.18em] uppercase rounded-2xl"
+              style={{ background: "#5C6B57", color: "#F6F4EF", border: "1px solid #5C6B57" }}
+              whileHover={{ background: "#4A5645", boxShadow: "0 8px 32px rgba(92,107,87,0.3)" }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.2 }}
+            >
+              Begin Your Practice →
+            </motion.button>
+          </Link>
+        </div>
+      </section>
 
       <Footer />
     </main>

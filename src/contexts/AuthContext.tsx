@@ -15,6 +15,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createUserProfile, getUserProfile, seedPrograms } from "@/lib/firestore";
@@ -30,6 +33,7 @@ interface AuthContextType {
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -180,6 +184,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user || !user.email) throw new Error("Not authenticated");
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
+  };
+
   /** Re-send the Firebase verification email.
    *  Works when user is signed in (verify-email page) AND after the blocked-login
    *  sign-out (login page), because we stash the user in lastUnverifiedRef first. */
@@ -204,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user, userProfile, loading,
         signInWithEmail, signUpWithEmail,
         signInWithGoogle, signInWithApple,
-        signOut, resetPassword, refreshProfile,
+        signOut, resetPassword, changePassword, refreshProfile,
         resendVerificationEmail, refreshUser,
       }}
     >

@@ -41,7 +41,7 @@ function buildHtml(opts: {
 }): string {
   const noteRow = opts.notes
     ? `<tr>
-         <td style="padding:8px 0;color:#7A7771;font-size:13px;width:110px;">Focus</td>
+         <td style="padding:8px 0;color:#4A4845;font-size:13px;width:110px;">Focus</td>
          <td style="padding:8px 0;color:#2C2B29;font-size:13px;">${opts.notes}</td>
        </tr>`
     : "";
@@ -61,22 +61,22 @@ function buildHtml(opts: {
     <!-- Body -->
     <div style="padding:40px;">
       <h2 style="font-family:Georgia,serif;font-size:22px;color:#2C2B29;font-weight:400;margin:0 0 10px;">${opts.title}</h2>
-      <p style="font-size:14px;color:#7A7771;margin:0 0 28px;line-height:1.6;">${opts.greeting}</p>
+      <p style="font-size:14px;color:#4A4845;margin:0 0 28px;line-height:1.6;">${opts.greeting}</p>
 
       <!-- Session details -->
-      <p style="font-size:11px;color:#7A7771;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.12em;">Session Details</p>
+      <p style="font-size:11px;color:#4A4845;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.12em;">Session Details</p>
       <div style="background:#F6F4EF;border-radius:14px;padding:8px 20px;margin-bottom:24px;">
         <table style="width:100%;border-collapse:collapse;">
           <tr>
-            <td style="padding:8px 0;color:#7A7771;font-size:13px;width:110px;">Date</td>
+            <td style="padding:8px 0;color:#4A4845;font-size:13px;width:110px;">Date</td>
             <td style="padding:8px 0;color:#2C2B29;font-size:13px;">${opts.date}</td>
           </tr>
           <tr>
-            <td style="padding:8px 0;color:#7A7771;font-size:13px;">Time</td>
-            <td style="padding:8px 0;color:#2C2B29;font-size:13px;">${opts.time} <span style="color:#7A7771;font-size:11px;">(UTC)</span></td>
+            <td style="padding:8px 0;color:#4A4845;font-size:13px;">Time</td>
+            <td style="padding:8px 0;color:#2C2B29;font-size:13px;">${opts.time} <span style="color:#4A4845;font-size:11px;">(UTC)</span></td>
           </tr>
           <tr>
-            <td style="padding:8px 0;color:#7A7771;font-size:13px;">Duration</td>
+            <td style="padding:8px 0;color:#4A4845;font-size:13px;">Duration</td>
             <td style="padding:8px 0;color:#2C2B29;font-size:13px;">60 minutes</td>
           </tr>
           ${noteRow}
@@ -84,7 +84,7 @@ function buildHtml(opts: {
       </div>
 
       <!-- Other person -->
-      <p style="font-size:11px;color:#7A7771;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.12em;">${opts.otherRole}</p>
+      <p style="font-size:11px;color:#4A4845;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.12em;">${opts.otherRole}</p>
       <p style="font-size:14px;color:#2C2B29;margin:0 0 32px;">${opts.otherPerson}</p>
 
       <!-- CTA -->
@@ -95,7 +95,7 @@ function buildHtml(opts: {
         </a>
       </div>
 
-      <p style="font-size:12px;color:#7A7771;line-height:1.6;margin:0;border-top:1px solid #E8E1D6;padding-top:20px;">
+      <p style="font-size:12px;color:#4A4845;line-height:1.6;margin:0;border-top:1px solid #E8E1D6;padding-top:20px;">
         A Google Calendar invite has been sent to your inbox with this meeting link.
         You'll receive a reminder 24 hours and 1 hour before the session.
         The link is also available in your Atmava dashboard.
@@ -104,7 +104,7 @@ function buildHtml(opts: {
 
     <!-- Footer -->
     <div style="background:#F6F4EF;padding:20px 40px;border-top:1px solid #E8E1D6;">
-      <p style="font-size:11px;color:#7A7771;margin:0;text-align:center;">
+      <p style="font-size:11px;color:#4A4845;margin:0;text-align:center;">
         © ${new Date().getFullYear()} Atmava &nbsp;·&nbsp; Awareness · Stillness · Mastery
       </p>
     </div>
