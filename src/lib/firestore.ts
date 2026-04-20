@@ -192,19 +192,19 @@ export async function deleteResource(id: string): Promise<void> {
 // ─── Enrollments ─────────────────────────────────────────────────────────────
 
 /** Returns the user's active enrollment, or null if none/expired.
- *  Filters endDate in JS (YYYY-MM-DD comparison) to avoid composite index requirement. */
+ *  Only filters by userId in Firestore (single-field index, always works).
+ *  status and endDate are checked in JS to avoid composite index requirement. */
 export async function getActiveEnrollment(userId: string): Promise<Enrollment | null> {
   const today = new Date().toISOString().split("T")[0];
   const q = query(
     collection(db, "enrollments"),
-    where("userId", "==", userId),
-    where("status", "==", "active")
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
   if (snap.empty) return null;
   const active = snap.docs
     .map(d => ({ id: d.id, ...d.data() } as Enrollment))
-    .find(e => e.endDate >= today);
+    .find(e => e.status === "active" && e.endDate >= today);
   return active ?? null;
 }
 
@@ -215,12 +215,14 @@ export async function getUserEnrollmentForProgram(
 ): Promise<Enrollment | null> {
   const q = query(
     collection(db, "enrollments"),
-    where("userId", "==", userId),
-    where("programId", "==", programId)
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
   if (snap.empty) return null;
-  return { id: snap.docs[0].id, ...snap.docs[0].data() } as Enrollment;
+  const match = snap.docs
+    .map(d => ({ id: d.id, ...d.data() } as Enrollment))
+    .find(e => e.programId === programId);
+  return match ?? null;
 }
 
 /** Admin — fetches recent enrollments ordered by date. */
@@ -476,7 +478,8 @@ export async function getAttendanceForSession(sessionId: string): Promise<Attend
   return snap.docs.map(d => d.data() as Attendance);
 }
 
-/** Get attendance history for a user in a program (most recent first). */
+/** Get attendance history for a user in a program (most recent first).
+ *  Only queries by userId to avoid composite index requirement; programId filtered in JS. */
 export async function getAttendanceForUser(
   userId: string,
   programId: string,
@@ -484,12 +487,12 @@ export async function getAttendanceForUser(
 ): Promise<Attendance[]> {
   const q = query(
     collection(db, "attendance"),
-    where("userId", "==", userId),
-    where("programId", "==", programId)
+    where("userId", "==", userId)
   );
   const snap = await getDocs(q);
   return snap.docs
     .map(d => d.data() as Attendance)
+    .filter(a => a.programId === programId)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, limitCount);
 }

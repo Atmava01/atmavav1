@@ -138,3 +138,133 @@ button:not(:disabled):hover {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* ── Admin theme tokens ────────────────────────────────────────────────────── */
+
+[data-admin-theme="dark"] {
+  --adm-bg:              #111110;
+  --adm-sidebar:         #161614;
+  --adm-surface:         #1A1917;
+  --adm-card:            rgba(255, 255, 255, 0.035);
+  --adm-card-hover:      rgba(255, 255, 255, 0.06);
+  --adm-elevated:        rgba(255, 255, 255, 0.055);
+  --adm-border:          rgba(255, 255, 255, 0.075);
+  --adm-border-accent:   rgba(122, 140, 116, 0.4);
+  --adm-topbar:          rgba(17, 17, 16, 0.88);
+  --adm-topbar-border:   rgba(255, 255, 255, 0.07);
+  --adm-input:           rgba(255, 255, 255, 0.05);
+  --adm-input-border:    rgba(255, 255, 255, 0.09);
+  --adm-text:            #F6F4EF;
+  --adm-text-2:          rgba(246, 244, 239, 0.55);
+  --adm-text-3:          rgba(246, 244, 239, 0.35);
+  --adm-text-4:          rgba(246, 244, 239, 0.25);
+  --adm-accent:          #7A8C74;
+  --adm-accent-bright:   #8FA888;
+  --adm-accent-bg:       rgba(122, 140, 116, 0.16);
+  --adm-accent-border:   rgba(122, 140, 116, 0.35);
+  --adm-danger:          #D47070;
+  --adm-danger-bg:       rgba(192, 64, 64, 0.12);
+  --adm-danger-border:   rgba(192, 64, 64, 0.3);
+  --adm-warn:            #D4B566;
+  --adm-warn-bg:         rgba(212, 170, 80, 0.12);
+  --adm-row-hover:       rgba(255, 255, 255, 0.025);
+  --adm-row-border:      rgba(255, 255, 255, 0.04);
+  --adm-th-color:        rgba(246, 244, 239, 0.35);
+  --adm-scroll-thumb:    rgba(255, 255, 255, 0.1);
+}
+
+[data-admin-theme="light"] {
+  --adm-bg:              #F4F2ED;
+  --adm-sidebar:         #1C1B19;
+  --adm-surface:         #FFFFFF;
+  --adm-card:            #FFFFFF;
+  --adm-card-hover:      #F0EDE8;
+  --adm-elevated:        #F8F6F2;
+  --adm-border:          #E0DAD2;
+  --adm-border-accent:   #A8B8A3;
+  --adm-topbar:          rgba(244, 242, 237, 0.92);
+  --adm-topbar-border:   #E0DAD2;
+  --adm-input:           rgba(0, 0, 0, 0.04);
+  --adm-input-border:    #D0CBC3;
+  --adm-text:            #1C1B19;
+  --adm-text-2:          #4A4845;
+  --adm-text-3:          #7A7672;
+  --adm-text-4:          #A09C98;
+  --adm-accent:          #5C6B57;
+  --adm-accent-bright:   #5C6B57;
+  --adm-accent-bg:       rgba(92, 107, 87, 0.1);
+  --adm-accent-border:   rgba(92, 107, 87, 0.35);
+  --adm-danger:          #B83232;
+  --adm-danger-bg:       rgba(184, 50, 50, 0.08);
+  --adm-danger-border:   rgba(184, 50, 50, 0.25);
+  --adm-warn:            #B8882A;
+  --adm-warn-bg:         rgba(184, 136, 42, 0.1);
+  --adm-row-hover:       #F8F6F2;
+  --adm-row-border:      #EDE9E3;
+  --adm-th-color:        #8A8480;
+  --adm-scroll-thumb:    #D0CBC3;
+}
+
+/* ── Admin utility classes ─────────────────────────────────────────────────── */
+
+.adm-bg       { background: var(--adm-bg); }
+.adm-surface  { background: var(--adm-surface); }
+.adm-card     { background: var(--adm-card); border: 1px solid var(--adm-border); }
+.adm-elevated { background: var(--adm-elevated); border: 1px solid var(--adm-border); }
+.adm-text     { color: var(--adm-text); }
+.adm-text-2   { color: var(--adm-text-2); }
+.adm-text-3   { color: var(--adm-text-3); }
+.adm-text-4   { color: var(--adm-text-4); }
+.adm-input    { background: var(--adm-input); border: 1px solid var(--adm-input-border); color: var(--adm-text); outline: none; }
+.adm-input::placeholder { color: var(--adm-text-3); }
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Admin table styles ────────────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--adm-th-color, rgba(246, 244, 239, 0.35));
+  border-bottom: 1px solid var(--adm-border, rgba(255, 255, 255, 0.07));
+  font-weight: 400;
+  white-space: nowrap;
+}
+.admin-table td {
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--adm-row-border, rgba(255, 255, 255, 0.04));
+  color: var(--adm-text-2, rgba(246, 244, 239, 0.75));
+  vertical-align: middle;
+}
+.admin-table tbody tr:hover td {
+  background: var(--adm-row-hover, rgba(255, 255, 255, 0.025));
+}
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Admin select / input dark reset ──────────────────────────────────────── */
+.admin-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(246,244,239,0.35)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px !important;
+  cursor: pointer;
+}
+
+/* ── Scrollbar for admin panels ───────────────────────────────────────────── */
+.admin-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.admin-scroll::-webkit-scrollbar-track { background: transparent; }
+.admin-scroll::-webkit-scrollbar-thumb { background: var(--adm-scroll-thumb, rgba(255,255,255,0.1)); border-radius: 4px; }
+.admin-scroll::-webkit-scrollbar-thumb:hover { background: var(--adm-accent, rgba(122,140,116,0.5)); }

@@ -40,8 +40,8 @@ service cloud.firestore {
 
     // ── Enrollments ────────────────────────────────────────────────────────────
     match /enrollments/{id} {
-      allow read:   if isAuth() && (resource.data.userId == request.auth.uid || isAdminOrMentor());
-      allow list:   if isAdminOrMentor();
+      allow get:    if isAuth() && (resource.data.userId == request.auth.uid || isAdminOrMentor());
+      allow list:   if isAuth();
       allow create: if isAuth();
       allow update: if isAdmin();
       allow delete: if isAdmin();

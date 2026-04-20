@@ -245,20 +245,25 @@ export function DashboardOverview() {
   const now = new Date();
   const dateLabel = now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
+  // Re-run load whenever the user's programId changes (e.g. after enrollment)
+  const programId = userProfile?.programId ?? null;
+
   const load = useCallback(async () => {
     if (!user) return;
     try {
       const enrollment = await getActiveEnrollment(user.uid);
       if (!enrollment) { setLoading(false); return; }
 
+      // Fetch secondary data with individual fallbacks so one failure
+      // doesn't hide the enrollment from the student.
       const [program, allSessions, todaySessions, attendance, todayMoodLog, moodLogs] =
         await Promise.all([
-          getProgramById(enrollment.programId),
-          getSessionsForProgram(enrollment.programId),
-          getTodaySessionsForProgram(enrollment.programId),
-          getAttendanceForUser(user.uid, enrollment.programId, 200),
-          getTodayMoodLog(user.uid),
-          getRecentMoodLogs(user.uid, 90),
+          getProgramById(enrollment.programId).catch(() => null),
+          getSessionsForProgram(enrollment.programId).catch(() => [] as Session[]),
+          getTodaySessionsForProgram(enrollment.programId).catch(() => [] as Session[]),
+          getAttendanceForUser(user.uid, enrollment.programId, 200).catch(() => [] as Attendance[]),
+          getTodayMoodLog(user.uid).catch(() => null),
+          getRecentMoodLogs(user.uid, 90).catch(() => [] as MoodLog[]),
         ]);
 
       const today = todayStr();
@@ -278,11 +283,16 @@ export function DashboardOverview() {
         todayMood: todayMoodLog?.mood ?? null,
         stats, weekDays,
       });
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("DashboardOverview load error:", e); }
     finally { setLoading(false); }
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, programId]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    setLoading(true);
+    setData(null);
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (!loading && !data) {
@@ -299,16 +309,7 @@ export function DashboardOverview() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-          className="w-7 h-7 rounded-full border-2 border-t-transparent"
-          style={{ borderColor: "#5C6B57" }}
-        />
-      </div>
-    );
+    return <div className="py-24" />;
   }
 
   // ── Not enrolled ─────────────────────────────────────────────────────────────

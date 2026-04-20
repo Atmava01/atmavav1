@@ -11,7 +11,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import {
-  getMentorAssignmentSnapshot, getSessionsByMentor,
+  getPrograms, getStudentsForProgram, getSessionsByMentor,
   getAttendanceForSession, getMentorSessionStats,
   getPaymentsByProgram, getJournalsWithRatingForProgram,
 } from "@/lib/firestore";
@@ -1095,19 +1095,22 @@ export function MentorOverview() {
 
     async function load() {
       try {
-        const token = await user!.getIdToken();
-        const [assignment, mentorSessions, mentorStats] = await Promise.all([
-          getMentorAssignmentSnapshot(token),
+        const [allPrograms, mentorSessions, mentorStats] = await Promise.all([
+          getPrograms(),
           getSessionsByMentor(user!.uid),
           getMentorSessionStats(user!.uid),
         ]);
         if (cancelled) return;
 
-        const myProgram = assignment.program;
+        const myProgram = allPrograms.find(p => p.mentorId === user!.uid) ?? null;
         setProgram(myProgram);
-        setStudents(assignment.students);
         setAllSessions(mentorSessions);
         setStats(mentorStats);
+
+        if (myProgram) {
+          const rows = await getStudentsForProgram(myProgram.id);
+          if (!cancelled) setStudents(rows);
+        }
 
         if (myProgram) {
           const [pmnts, jrnls] = await Promise.all([

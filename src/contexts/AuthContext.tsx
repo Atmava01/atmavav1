@@ -20,7 +20,7 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createUserProfile, getUserProfile, seedPrograms } from "@/lib/firestore";
+import { createUserProfile, getUserProfile, subscribeUserProfile, seedPrograms } from "@/lib/firestore";
 import type { UserProfile } from "@/types";
 
 interface AuthContextType {
@@ -74,10 +74,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => { /* no redirect pending — ignore */ });
 
+    let profileUnsub: (() => void) | null = null;
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Tear down any previous profile subscription
+      if (profileUnsub) { profileUnsub(); profileUnsub = null; }
+
       setUser(firebaseUser);
       if (firebaseUser) {
+        // Do an immediate fetch so the profile is ready for the first render
         await loadProfile(firebaseUser.uid);
+        // Then subscribe for real-time updates (enrollment changes, role changes, etc.)
+        profileUnsub = subscribeUserProfile(firebaseUser.uid, (profile) => {
+          setUserProfile(profile);
+        });
         // Seed default programs if not existing
         seedPrograms().catch(() => {});
       } else {
@@ -85,7 +95,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     });
-    return () => unsub();
+
+    return () => {
+      unsub();
+      if (profileUnsub) profileUnsub();
+    };
   }, [loadProfile]);
 
   const refreshProfile = async () => {

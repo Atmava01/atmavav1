@@ -1,19 +1,19 @@
 "use client";
 
-// Auth + role protection is handled by src/app/admin/layout.tsx (AdminGuard).
-// This page only renders for verified users with role === "admin".
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { OverviewPanel }    from "@/components/admin/OverviewPanel";
-import { UsersPanel }       from "@/components/admin/UsersPanel";
-import { ProgramsPanel }    from "@/components/admin/ProgramsPanel";
-import { PaymentsPanel }    from "@/components/admin/PaymentsPanel";
-import { SessionsPanel }    from "@/components/admin/SessionsPanel";
-import { MentorsPanel }      from "@/components/admin/MentorsPanel";
-import { EnrollmentsPanel }  from "@/components/admin/EnrollmentsPanel";
-import { LandingPagePanel }  from "@/components/admin/LandingPagePanel";
+import { AdminSidebar }    from "@/components/admin/AdminSidebar";
+import { OverviewPanel }   from "@/components/admin/OverviewPanel";
+import { UsersPanel }      from "@/components/admin/UsersPanel";
+import { ProgramsPanel }   from "@/components/admin/ProgramsPanel";
+import { PaymentsPanel }   from "@/components/admin/PaymentsPanel";
+import { SessionsPanel }   from "@/components/admin/SessionsPanel";
+import { MentorsPanel }    from "@/components/admin/MentorsPanel";
+import { EnrollmentsPanel }from "@/components/admin/EnrollmentsPanel";
+import { LandingPagePanel }from "@/components/admin/LandingPagePanel";
+import { ToastProvider }      from "@/components/admin/ui/Toast";
+import { CommandPalette }     from "@/components/admin/ui/CommandPalette";
+import { AdminThemeProvider } from "@/components/admin/ui/ThemeContext";
 
 type Panel = "overview" | "users" | "payments" | "programs" | "enrollments" | "sessions" | "mentors" | "landing";
 
@@ -32,26 +32,55 @@ function renderPanel(active: Panel) {
 }
 
 export default function AdminPage() {
-  const [active, setActive] = useState<Panel>("overview");
+  const [active, setActive]           = useState<Panel>("overview");
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // CMD+K global shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(p => !p);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const handleNavigate = (id: string) => setActive(id as Panel);
 
   return (
-    <div className="min-h-screen" style={{ background: active === "overview" ? "#F6F4EF" : "#1A1917" }}>
-      <AdminSidebar active={active} setActive={setActive as (v: string) => void} />
+    <AdminThemeProvider>
+    <ToastProvider>
+      <div className="min-h-screen adm-bg">
+        <AdminSidebar
+          active={active}
+          setActive={setActive as (v: string) => void}
+          onOpenPalette={() => setPaletteOpen(true)}
+        />
 
-      <main className={`min-h-screen md:ml-[220px] pt-14 md:pt-0 ${active === "overview" ? "p-0" : "px-4 py-5 md:px-10 md:py-12"}`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-            className={active === "overview" ? "w-full" : "max-w-4xl"}
-          >
-            {renderPanel(active)}
-          </motion.div>
-        </AnimatePresence>
-      </main>
-    </div>
+        <main className="min-h-screen md:ml-[220px] pt-14 md:pt-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0  }}
+              exit={{    opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+              className="w-full"
+            >
+              {renderPanel(active)}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          onNavigate={handleNavigate}
+        />
+      </div>
+    </ToastProvider>
+    </AdminThemeProvider>
   );
 }

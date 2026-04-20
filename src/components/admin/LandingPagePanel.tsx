@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Pencil, Trash2, X, Upload, ImageIcon } from "lucide-react";
+import { TopBar } from "@/components/admin/ui/TopBar";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import {
@@ -33,11 +34,11 @@ const MAX_TESTIMONIALS = 3;
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  background: "rgba(246,244,239,0.06)",
-  border: "1px solid rgba(255,255,255,0.1)",
+  background: "var(--adm-input)",
+  border: "1px solid var(--adm-input-border)",
   borderRadius: "10px",
   padding: "10px 14px",
-  color: "#F6F4EF",
+  color: "var(--adm-text)",
   fontSize: "0.875rem",
   outline: "none",
 };
@@ -45,7 +46,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   display: "block",
   fontSize: "0.75rem",
-  color: "rgba(246,244,239,0.5)",
+  color: "var(--adm-text-3)",
   marginBottom: "6px",
   textTransform: "uppercase",
   letterSpacing: "0.1em",
@@ -93,7 +94,7 @@ function TestimonialForm({
   return (
     <div
       className="rounded-2xl p-6 space-y-4"
-      style={{ background: "rgba(246,244,239,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}
     >
       <div>
         <label style={labelStyle}>Quote</label>
@@ -135,7 +136,7 @@ function TestimonialForm({
         <button
           onClick={onCancel}
           className="px-4 py-2 rounded-xl text-sm"
-          style={{ background: "rgba(246,244,239,0.06)", color: "rgba(246,244,239,0.6)" }}
+          style={{ background: "var(--adm-input)", color: "rgba(246,244,239,0.6)" }}
         >
           Cancel
         </button>
@@ -184,20 +185,20 @@ function TestimonialsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm" style={{ color: "rgba(246,244,239,0.5)" }}>
+        <p className="text-sm" style={{ color: "var(--adm-text-3)" }}>
           {items.length} / {MAX_TESTIMONIALS} testimonials
         </p>
         {!adding && !atMax && (
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs"
-            style={{ background: "#5C6B57", color: "#F6F4EF" }}
+            style={{ background: "#5C6B57", color: "var(--adm-text)" }}
           >
             <Plus size={12} /> Add
           </button>
         )}
         {atMax && (
-          <p className="text-xs" style={{ color: "rgba(246,244,239,0.3)" }}>
+          <p className="text-xs" style={{ color: "var(--adm-text-4)" }}>
             Max 6 reached — delete one to add another
           </p>
         )}
@@ -219,11 +220,11 @@ function TestimonialsTab() {
       {loading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: "rgba(246,244,239,0.05)" }} />
+            <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: "var(--adm-elevated)" }} />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="py-12 text-center" style={{ color: "rgba(246,244,239,0.3)", fontSize: "0.875rem" }}>
+        <div className="py-12 text-center" style={{ color: "var(--adm-text-4)", fontSize: "0.875rem" }}>
           No testimonials yet. Add one above.
         </div>
       ) : (
@@ -233,7 +234,7 @@ function TestimonialsTab() {
               key={item.id}
               layout
               className="rounded-2xl"
-              style={{ background: "rgba(246,244,239,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+              style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }}
             >
               {editingId === item.id ? (
                 <div className="p-4">
@@ -249,7 +250,7 @@ function TestimonialsTab() {
                     <p className="text-sm italic mb-1" style={{ color: "rgba(246,244,239,0.7)", fontWeight: 300 }}>
                       "{item.quote}"
                     </p>
-                    <p className="text-xs" style={{ color: "rgba(246,244,239,0.4)" }}>
+                    <p className="text-xs" style={{ color: "var(--adm-text-3)" }}>
                       — {item.name} · {item.detail}
                     </p>
                   </div>
@@ -257,7 +258,7 @@ function TestimonialsTab() {
                     <button
                       onClick={() => setEditingId(item.id)}
                       className="p-1.5 rounded-lg"
-                      style={{ color: "rgba(246,244,239,0.4)" }}
+                      style={{ color: "var(--adm-text-3)" }}
                     >
                       <Pencil size={13} />
                     </button>
@@ -273,7 +274,7 @@ function TestimonialsTab() {
                         <button
                           onClick={() => setDeletingId(null)}
                           className="p-1.5 rounded-lg"
-                          style={{ color: "rgba(246,244,239,0.4)" }}
+                          style={{ color: "var(--adm-text-3)" }}
                         >
                           <X size={13} />
                         </button>
@@ -282,7 +283,7 @@ function TestimonialsTab() {
                       <button
                         onClick={() => setDeletingId(item.id)}
                         className="p-1.5 rounded-lg"
-                        style={{ color: "rgba(246,244,239,0.4)" }}
+                        style={{ color: "var(--adm-text-3)" }}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -359,7 +360,7 @@ function MentorForm({
   return (
     <div
       className="rounded-2xl p-6 space-y-4"
-      style={{ background: "rgba(246,244,239,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+      style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}
     >
       {/* Photo upload */}
       <div>
@@ -368,12 +369,12 @@ function MentorForm({
           {/* Preview */}
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-            style={{ background: "rgba(246,244,239,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+            style={{ background: "var(--adm-input)", border: "1px solid var(--adm-input-border)" }}
           >
             {photoPreview ? (
               <img src={photoPreview} alt="preview" className="w-full h-full object-cover" />
             ) : (
-              <ImageIcon size={20} style={{ color: "rgba(246,244,239,0.25)" }} />
+              <ImageIcon size={20} style={{ color: "var(--adm-text-4)" }} />
             )}
           </div>
           {/* Upload button */}
@@ -382,7 +383,7 @@ function MentorForm({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs"
-              style={{ background: "rgba(246,244,239,0.08)", color: "rgba(246,244,239,0.6)", border: "1px solid rgba(255,255,255,0.1)" }}
+              style={{ background: "var(--adm-input)", color: "rgba(246,244,239,0.6)", border: "1px solid var(--adm-input-border)" }}
             >
               <Upload size={11} /> {photoPreview ? "Change photo" : "Upload photo"}
             </button>
@@ -391,7 +392,7 @@ function MentorForm({
                 type="button"
                 onClick={() => { setPhotoFile(null); setPhotoPreview(""); setForm(prev => ({ ...prev, photoURL: "" })); }}
                 className="flex items-center gap-1 text-xs px-2 py-1"
-                style={{ color: "rgba(246,244,239,0.35)" }}
+                style={{ color: "var(--adm-text-4)" }}
               >
                 <X size={10} /> Remove
               </button>
@@ -427,7 +428,7 @@ function MentorForm({
               <button
                 onClick={() => removePara(i)}
                 className="p-1.5 rounded-lg self-start mt-0.5"
-                style={{ color: "rgba(246,244,239,0.4)", flexShrink: 0 }}
+                style={{ color: "var(--adm-text-3)", flexShrink: 0 }}
               >
                 <X size={13} />
               </button>
@@ -437,7 +438,7 @@ function MentorForm({
         <button
           onClick={addPara}
           className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-xl"
-          style={{ background: "rgba(246,244,239,0.06)", color: "rgba(246,244,239,0.5)" }}
+          style={{ background: "var(--adm-input)", color: "var(--adm-text-3)" }}
         >
           <Plus size={11} /> Add paragraph
         </button>
@@ -460,7 +461,7 @@ function MentorForm({
           onClick={onCancel}
           disabled={uploading}
           className="px-4 py-2 rounded-xl text-sm"
-          style={{ background: "rgba(246,244,239,0.06)", color: "rgba(246,244,239,0.6)" }}
+          style={{ background: "var(--adm-input)", color: "rgba(246,244,239,0.6)" }}
         >
           Cancel
         </button>
@@ -507,14 +508,14 @@ function MentorsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm" style={{ color: "rgba(246,244,239,0.5)" }}>
+        <p className="text-sm" style={{ color: "var(--adm-text-3)" }}>
           {items.length} mentor{items.length !== 1 ? "s" : ""} on the about page
         </p>
         {!adding && (
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs"
-            style={{ background: "#5C6B57", color: "#F6F4EF" }}
+            style={{ background: "#5C6B57", color: "var(--adm-text)" }}
           >
             <Plus size={12} /> Add
           </button>
@@ -537,11 +538,11 @@ function MentorsTab() {
       {loading ? (
         <div className="space-y-3">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: "rgba(246,244,239,0.05)" }} />
+            <div key={i} className="h-16 rounded-2xl animate-pulse" style={{ background: "var(--adm-elevated)" }} />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="py-12 text-center" style={{ color: "rgba(246,244,239,0.3)", fontSize: "0.875rem" }}>
+        <div className="py-12 text-center" style={{ color: "var(--adm-text-4)", fontSize: "0.875rem" }}>
           No mentors yet. Add one above.
         </div>
       ) : (
@@ -551,7 +552,7 @@ function MentorsTab() {
               key={item.id}
               layout
               className="rounded-2xl"
-              style={{ background: "rgba(246,244,239,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+              style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }}
             >
               {editingId === item.id ? (
                 <div className="p-4">
@@ -566,19 +567,19 @@ function MentorsTab() {
                   {/* Photo thumbnail */}
                   <div
                     className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden flex items-center justify-center"
-                    style={{ background: "rgba(246,244,239,0.08)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    style={{ background: "var(--adm-input)", border: "1px solid var(--adm-border)" }}
                   >
                     {item.photoURL ? (
                       <img src={item.photoURL} alt={item.name} className="w-full h-full object-cover" />
                     ) : (
-                      <ImageIcon size={14} style={{ color: "rgba(246,244,239,0.2)" }} />
+                      <ImageIcon size={14} style={{ color: "var(--adm-text-4)" }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium mb-0.5" style={{ color: "#F6F4EF" }}>
+                    <p className="text-sm font-medium mb-0.5" style={{ color: "var(--adm-text)" }}>
                       {item.name}
                     </p>
-                    <p className="text-xs" style={{ color: "rgba(246,244,239,0.4)" }}>
+                    <p className="text-xs" style={{ color: "var(--adm-text-3)" }}>
                       {item.paras.length} paragraph{item.paras.length !== 1 ? "s" : ""}{item.photoURL ? "" : " · no photo"}
                     </p>
                   </div>
@@ -586,7 +587,7 @@ function MentorsTab() {
                     <button
                       onClick={() => setEditingId(item.id)}
                       className="p-1.5 rounded-lg"
-                      style={{ color: "rgba(246,244,239,0.4)" }}
+                      style={{ color: "var(--adm-text-3)" }}
                     >
                       <Pencil size={13} />
                     </button>
@@ -602,7 +603,7 @@ function MentorsTab() {
                         <button
                           onClick={() => setDeletingId(null)}
                           className="p-1.5 rounded-lg"
-                          style={{ color: "rgba(246,244,239,0.4)" }}
+                          style={{ color: "var(--adm-text-3)" }}
                         >
                           <X size={13} />
                         </button>
@@ -611,7 +612,7 @@ function MentorsTab() {
                       <button
                         onClick={() => setDeletingId(item.id)}
                         className="p-1.5 rounded-lg"
-                        style={{ color: "rgba(246,244,239,0.4)" }}
+                        style={{ color: "var(--adm-text-3)" }}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -643,60 +644,48 @@ export function LandingPagePanel() {
   ];
 
   return (
-    <div>
-      <div className="mb-8">
-        <p className="text-xs tracking-[0.2em] uppercase mb-2" style={{ color: "rgba(246,244,239,0.35)" }}>
-          Admin
-        </p>
-        <h1
-          style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(1.8rem, 3vw, 2.6rem)",
-            fontWeight: 300,
-            color: "#F6F4EF",
-            lineHeight: 1.2,
-          }}
-        >
-          Landing Page Settings
-        </h1>
-        <p className="mt-2 text-sm" style={{ color: "rgba(246,244,239,0.4)" }}>
-          Manage testimonials and mentor profiles displayed on the public site.
-        </p>
-      </div>
+    <div className="flex flex-col min-h-screen adm-bg">
+      <TopBar
+        title="Landing Page"
+        subtitle="Manage public-facing testimonials and mentor profiles"
+        onOpenPalette={() => {}}
+      />
 
-      <div className="flex gap-2 mb-6">
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className="px-4 py-2 rounded-xl text-sm transition-all"
-            style={{
-              background: tab === t.id ? "rgba(92,107,87,0.25)" : "rgba(246,244,239,0.06)",
-              color: tab === t.id ? "#F6F4EF" : "rgba(246,244,239,0.45)",
-              border: tab === t.id ? "1px solid rgba(92,107,87,0.4)" : "1px solid transparent",
-              fontWeight: tab === t.id ? 500 : 400,
-            }}
+      <div className="px-6 md:px-10 py-6 space-y-5 max-w-5xl">
+
+        {/* Tab switcher */}
+        <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "var(--adm-elevated)" }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className="px-4 py-2 rounded-lg text-xs capitalize transition-all"
+              style={{
+                background: tab === t.id ? "rgba(122,140,116,0.2)" : "transparent",
+                color:      tab === t.id ? "#8FA888"               : "var(--adm-text-4)",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <p className="text-xs" style={{ color: "var(--adm-text-4)" }}>
+          {tabs.find(t => t.id === tab)?.sub}
+        </p>
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
           >
-            {t.label}
-          </button>
-        ))}
+            {tab === "testimonials" ? <TestimonialsTab /> : <MentorsTab />}
+          </motion.div>
+        </AnimatePresence>
       </div>
-
-      <p className="text-xs mb-5" style={{ color: "rgba(246,244,239,0.3)" }}>
-        {tabs.find(t => t.id === tab)?.sub}
-      </p>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={tab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          {tab === "testimonials" ? <TestimonialsTab /> : <MentorsTab />}
-        </motion.div>
-      </AnimatePresence>
     </div>
   );
 }

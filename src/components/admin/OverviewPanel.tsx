@@ -3,13 +3,32 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  RefreshCw, Bell, Plus, Download, ArrowUp, ArrowDown,
+  RefreshCw, Plus, ArrowUp, ArrowDown,
   Monitor, Users, Clock, TrendingUp, Star,
   CheckCircle2, AlertCircle, ChevronRight, Circle,
+  Sun, Moon,
 } from "lucide-react";
 import { getAdminOverviewData, type AdminOverviewData } from "@/lib/firestore";
 import type { Session, Enrollment } from "@/types";
 import { useRouter } from "next/navigation";
+import { SkeletonCard } from "@/components/admin/ui/Skeleton";
+import { useAdminTheme } from "@/components/admin/ui/ThemeContext";
+
+function ThemeToggle() {
+  const { isDark, toggleTheme } = useAdminTheme();
+  return (
+    <button
+      onClick={toggleTheme}
+      className="w-9 h-9 rounded-xl flex items-center justify-center transition-all adm-text-3"
+      style={{ border: "1px solid var(--adm-border)", background: "var(--adm-input)" }}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      onMouseEnter={e => (e.currentTarget.style.background = "var(--adm-elevated)")}
+      onMouseLeave={e => (e.currentTarget.style.background = "var(--adm-input)")}
+    >
+      {isDark ? <Sun size={14} /> : <Moon size={14} />}
+    </button>
+  );
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,7 +76,7 @@ function StatCard({ icon, iconBg, label, value, sub, trend }: {
   trend?: { dir: "up"|"down"; label: string; color?: string };
 }) {
   return (
-    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background:"#fff", border:"1px solid #E8E1D6" }}>
+    <div className="p-5 rounded-2xl flex flex-col gap-3" style={{ background: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.07)" }}>
       <div className="flex items-center justify-between">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: iconBg }}>{icon}</div>
         {trend && (
@@ -68,23 +87,23 @@ function StatCard({ icon, iconBg, label, value, sub, trend }: {
         )}
       </div>
       <div>
-        <p className="text-xs tracking-widest uppercase mb-1" style={{ color:"#6B6660" }}>{label}</p>
-        <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"2rem", fontWeight:400, color:"#2C2B29", lineHeight:1 }}>{value}</p>
-        <p className="text-xs mt-1" style={{ color:"#9A9490" }}>{sub}</p>
+        <p className="text-xs tracking-widest uppercase mb-1" style={{ color: "rgba(246,244,239,0.38)" }}>{label}</p>
+        <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"2rem", fontWeight:400, color:"var(--adm-text)", lineHeight:1 }}>{value}</p>
+        <p className="text-xs mt-1" style={{ color: "rgba(246,244,239,0.38)" }}>{sub}</p>
       </div>
     </div>
   );
 }
 
-function Spinner() {
+function OverviewSkeleton() {
   return (
-    <div className="flex justify-center py-24">
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
-        className="w-8 h-8 rounded-full border-2 border-t-transparent"
-        style={{ borderColor: "#5C6B57" }}
-      />
+    <div className="px-6 md:px-10 pt-6 space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <SkeletonCard key={i} />)}
+      </div>
     </div>
   );
 }
@@ -213,18 +232,23 @@ export function OverviewPanel() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="pb-20" style={{ background:"#F6F4EF" }}>
+    <div className="pb-20 adm-bg" style={{ minHeight: "100vh" }}>
 
       {/* Header */}
       <div
         className="sticky top-0 z-20 px-6 md:px-10 py-4 flex items-center justify-between"
-        style={{ background:"rgba(246,244,239,0.92)", backdropFilter:"blur(16px)", borderBottom:"1px solid #E8E1D6" }}
+        style={{
+          background: "var(--adm-topbar)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: "1px solid var(--adm-topbar-border)",
+        }}
       >
         <div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.6rem", fontWeight:400, color:"#2C2B29" }}>Platform Overview</h1>
+          <h1 className="adm-text" style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.6rem", fontWeight:400 }}>Platform Overview</h1>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs" style={{ color:"#9A9490" }}>{today}</span>
-            <span style={{ color:"#D4CCBF" }}>·</span>
+            <span className="text-xs adm-text-3">{today}</span>
+            <span className="adm-text-4">·</span>
             <div className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background:"#22c55e" }} />
               <span className="text-xs" style={{ color:"#22c55e" }}>All systems operational</span>
@@ -234,35 +258,25 @@ export function OverviewPanel() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setRefreshKey(k => k + 1)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ border:"1px solid #E8E1D6", background:"#fff" }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all adm-text-3"
+            style={{ border: "1px solid var(--adm-border)", background: "var(--adm-input)" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--adm-elevated)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "var(--adm-input)")}
           >
-            <RefreshCw size={13} style={{ color:"#6B6660" }} />
+            <RefreshCw size={13} />
           </button>
-          <div className="relative">
-            <button className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ border:"1px solid #E8E1D6", background:"#fff" }}>
-              <Bell size={13} style={{ color:"#6B6660" }} />
-            </button>
-            {notifications.length > 0 && (
-              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background:"#ef4444", color:"#fff" }}>
-                {notifications.length}
-              </div>
-            )}
-          </div>
+          <ThemeToggle />
           <button
             onClick={() => router.push("/admin")}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-            style={{ background:"#5C6B57", color:"#F6F4EF" }}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+            style={{ background:"var(--adm-accent)", color:"var(--adm-text)" }}
           >
             <Plus size={13}/> New Program
-          </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ border:"1px solid #E8E1D6", background:"#fff", color:"#4A4845" }}>
-            <Download size={13}/> Export
           </button>
         </div>
       </div>
 
-      {loading ? <Spinner /> : (
+      {loading ? <OverviewSkeleton /> : (
         <div className="px-6 md:px-10 pt-6 space-y-6">
 
           {/* Stats Row 1 */}
@@ -296,11 +310,11 @@ export function OverviewPanel() {
           {/* Live Sessions */}
           {todaySessions.length > 0 && (
             <motion.div className="rounded-2xl overflow-hidden" style={{ border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}>
-              <div className="px-6 py-3.5 flex items-center justify-between" style={{ background:"#2C2B29" }}>
+              <div className="px-6 py-3.5 flex items-center justify-between" style={{ background:"rgba(255,255,255,0.06)" }}>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ background:"#ef4444" }} />
-                    <span className="text-sm font-medium" style={{ color:"#F6F4EF" }}>Live Sessions — Right Now</span>
+                    <span className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Live Sessions — Right Now</span>
                   </div>
                   {liveSessions.length > 0 && (
                     <div className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background:"#ef4444", color:"#fff" }}>
@@ -317,14 +331,14 @@ export function OverviewPanel() {
                 </button>
               </div>
 
-              <div className="p-4 grid md:grid-cols-2 gap-4" style={{ background:"#F6F4EF" }}>
+              <div className="p-4 grid md:grid-cols-2 gap-4" style={{ background:"var(--adm-card)" }}>
                 {todaySessions.map(s => {
                   const live = isLiveNow(s);
                   const present = data?.attendanceCounts[s.id] ?? 0;
                   const pct = data?.activeEnrollments ? Math.min(100, Math.round((present / data.activeEnrollments) * 100)) : 0;
                   const elapsed = elapsedMins(s);
                   return (
-                    <div key={s.id} className="rounded-xl p-5" style={{ background:"#fff", border:`1.5px solid ${live ? "rgba(239,68,68,0.2)" : "#E8E1D6"}` }}>
+                    <div key={s.id} className="rounded-xl p-5" style={{ background:"rgba(255,255,255,0.04)", border:`1.5px solid ${live ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.07)"}` }}>
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -334,27 +348,27 @@ export function OverviewPanel() {
                                 <span className="text-[10px] font-semibold tracking-widest" style={{ color:"#ef4444" }}>LIVE · {elapsed} MIN</span>
                               </div>
                             ) : (
-                              <span className="text-[10px] font-semibold tracking-widest" style={{ color:"#9A9490" }}>
+                              <span className="text-[10px] font-semibold tracking-widest" style={{ color:"var(--adm-text-3)" }}>
                                 {fmt12(s.startTime)} – {fmt12(s.endTime)}
                               </span>
                             )}
                           </div>
-                          <h3 style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", fontWeight:400, color:"#2C2B29" }}>{s.title}</h3>
-                          <p className="text-xs mt-0.5" style={{ color:"#9A9490" }}>{s.mentorName} · {s.batch} Batch</p>
+                          <h3 style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", fontWeight:400, color:"var(--adm-text)" }}>{s.title}</h3>
+                          <p className="text-xs mt-0.5" style={{ color:"var(--adm-text-3)" }}>{s.mentorName} · {s.batch} Batch</p>
                         </div>
                         <div className="text-right">
-                          <span style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.8rem", color:"#2C2B29", lineHeight:1 }}>{present}</span>
-                          <p className="text-[9px] tracking-widest uppercase" style={{ color:"#9A9490" }}>attended</p>
+                          <span style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.8rem", color:"var(--adm-text)", lineHeight:1 }}>{present}</span>
+                          <p className="text-[9px] tracking-widest uppercase" style={{ color:"var(--adm-text-3)" }}>attended</p>
                         </div>
                       </div>
 
                       {live && (
                         <div className="mb-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] tracking-widest uppercase" style={{ color:"#9A9490" }}>Attendance</span>
-                            <span className="text-[10px]" style={{ color:"#9A9490" }}>{pct}%</span>
+                            <span className="text-[10px] tracking-widest uppercase" style={{ color:"var(--adm-text-3)" }}>Attendance</span>
+                            <span className="text-[10px]" style={{ color:"var(--adm-text-3)" }}>{pct}%</span>
                           </div>
-                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background:"#E8E1D6" }}>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background:"rgba(255,255,255,0.08)" }}>
                             <div className="h-full rounded-full" style={{ width:`${pct}%`, background:"#ef4444" }} />
                           </div>
                         </div>
@@ -364,7 +378,7 @@ export function OverviewPanel() {
                         <button
                           onClick={() => router.push(`/session/${s.id}`)}
                           className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium tracking-widest uppercase"
-                          style={{ background:"#2C2B29", color:"#F6F4EF" }}
+                          style={{ background:"rgba(255,255,255,0.06)", color:"var(--adm-text)" }}
                         >
                           <Monitor size={11}/> Monitor
                         </button>
@@ -377,26 +391,26 @@ export function OverviewPanel() {
           )}
 
           {/* Session Schedule */}
-          <motion.div className="rounded-2xl overflow-hidden" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.55 }}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom:"1px solid #E8E1D6" }}>
-              <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Session Schedule — All Mentors</h3>
-              <span className="text-xs" style={{ color:"#9A9490" }}>
+          <motion.div className="rounded-2xl overflow-hidden" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.55 }}>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Session Schedule — All Mentors</h3>
+              <span className="text-xs" style={{ color:"var(--adm-text-3)" }}>
                 {allSessions.length} total sessions
               </span>
             </div>
 
             {allSessions.length === 0 ? (
               <div className="px-6 py-10 text-center">
-                <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.2rem", color:"#9A9490", fontWeight:300 }}>No sessions created yet</p>
-                <p className="text-xs mt-1" style={{ color:"#C4BDB5" }}>Sessions created by mentors will appear here</p>
+                <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.2rem", color:"var(--adm-text-3)", fontWeight:300 }}>No sessions created yet</p>
+                <p className="text-xs mt-1" style={{ color:"var(--adm-text-4)" }}>Sessions created by mentors will appear here</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom:"1px solid #E8E1D6" }}>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                       {["SESSION","MENTOR","BATCH","DATE","TIME","ATTENDED","STATUS"].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"#9A9490", fontWeight:500 }}>{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"rgba(246,244,239,0.35)", fontWeight:400 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -406,12 +420,12 @@ export function OverviewPanel() {
                       const attended = data?.attendanceCounts[s.id] ?? 0;
                       const past = s.date < new Date().toISOString().split("T")[0];
                       return (
-                        <tr key={s.id} style={{ borderBottom: i < Math.min(allSessions.length, 10) - 1 ? "1px solid #F0EBE3" : "none" }}>
-                          <td className="px-5 py-3.5 text-sm font-medium" style={{ color:"#2C2B29" }}>{s.title}</td>
+                        <tr key={s.id} style={{ borderBottom: i < Math.min(allSessions.length, 10) - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                          <td className="px-5 py-3.5 text-sm font-medium" style={{ color:"var(--adm-text)" }}>{s.title}</td>
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium" style={{ background:"#5C6B57", color:"#fff" }}>{initials(s.mentorName)}</div>
-                              <span className="text-sm" style={{ color:"#4A4845" }}>{s.mentorName}</span>
+                              <span className="text-sm" style={{ color:"var(--adm-text-2)" }}>{s.mentorName}</span>
                             </div>
                           </td>
                           <td className="px-5 py-3.5">
@@ -420,9 +434,9 @@ export function OverviewPanel() {
                               color: s.batch === "Morning" ? "#ea7c1a" : "#6366f1",
                             }}>{s.batch.toUpperCase()}</span>
                           </td>
-                          <td className="px-5 py-3.5 text-sm" style={{ color:"#4A4845" }}>{fmtDate(s.date)}</td>
-                          <td className="px-5 py-3.5 text-sm" style={{ color:"#4A4845" }}>{fmt12(s.startTime)}</td>
-                          <td className="px-5 py-3.5 text-sm font-medium" style={{ color:"#2C2B29" }}>{attended}</td>
+                          <td className="px-5 py-3.5 text-sm" style={{ color:"var(--adm-text-2)" }}>{fmtDate(s.date)}</td>
+                          <td className="px-5 py-3.5 text-sm" style={{ color:"var(--adm-text-2)" }}>{fmt12(s.startTime)}</td>
+                          <td className="px-5 py-3.5 text-sm font-medium" style={{ color:"var(--adm-text)" }}>{attended}</td>
                           <td className="px-5 py-3.5">
                             {live ? (
                               <div className="flex items-center gap-1.5">
@@ -443,27 +457,27 @@ export function OverviewPanel() {
               </div>
             )}
 
-            <div className="px-6 py-3 flex items-center justify-between" style={{ borderTop:"1px solid #E8E1D6", background:"#FAFAF7" }}>
-              <span className="text-xs" style={{ color:"#9A9490" }}>
+            <div className="px-6 py-3 flex items-center justify-between" style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background:"rgba(255,255,255,0.03)" }}>
+              <span className="text-xs" style={{ color:"var(--adm-text-3)" }}>
                 {liveSessions.length} live · {liveParticipants} participants · {todaySessions.length} today
               </span>
-              <span className="text-xs" style={{ color:"#C4BDB5" }}>Showing latest 10</span>
+              <span className="text-xs" style={{ color:"var(--adm-text-4)" }}>Showing latest 10</span>
             </div>
           </motion.div>
 
           {/* Revenue + Platform Health */}
           <div className="grid md:grid-cols-3 gap-4">
-            <motion.div className="md:col-span-2 rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}>
+            <motion.div className="md:col-span-2 rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.6 }}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Revenue Over Time</h3>
-                <span className="text-xs" style={{ color:"#9A9490" }}>From paid enrollments</span>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Revenue Over Time</h3>
+                <span className="text-xs" style={{ color:"var(--adm-text-3)" }}>From paid enrollments</span>
               </div>
               {totalRevPaid === 0 ? (
                 <div className="flex items-end gap-1.5 h-28 mb-4">
                   {revBars.map(b => (
                     <div key={b.month} className="flex-1 flex flex-col items-center gap-1">
                       <div className="w-full rounded-t-md" style={{ height:"10%", background:"rgba(92,107,87,0.1)" }} />
-                      <span className="text-[9px]" style={{ color:"#C4BDB5" }}>{b.month}</span>
+                      <span className="text-[9px]" style={{ color:"var(--adm-text-4)" }}>{b.month}</span>
                     </div>
                   ))}
                 </div>
@@ -480,25 +494,25 @@ export function OverviewPanel() {
                   })}
                 </div>
               )}
-              <div className="flex items-center gap-8 pt-4" style={{ borderTop:"1px solid #E8E1D6" }}>
+              <div className="flex items-center gap-8 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
                 <div>
-                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{fmtRupees(monthRev)}</p>
-                  <p className="text-xs" style={{ color:"#9A9490" }}>This month</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{fmtRupees(monthRev)}</p>
+                  <p className="text-xs" style={{ color:"var(--adm-text-3)" }}>This month</p>
                 </div>
                 <div>
-                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{fmtRupees(totalRevPaid)}</p>
-                  <p className="text-xs" style={{ color:"#9A9490" }}>All time</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{fmtRupees(totalRevPaid)}</p>
+                  <p className="text-xs" style={{ color:"var(--adm-text-3)" }}>All time</p>
                 </div>
                 <div>
-                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{data?.activeEnrollments ?? 0}</p>
-                  <p className="text-xs" style={{ color:"#9A9490" }}>Active members</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{data?.activeEnrollments ?? 0}</p>
+                  <p className="text-xs" style={{ color:"var(--adm-text-3)" }}>Active members</p>
                 </div>
               </div>
             </motion.div>
 
-            <motion.div className="rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.65 }}>
+            <motion.div className="rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.65 }}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Platform Health</h3>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Platform Health</h3>
                 <button className="text-xs flex items-center gap-1" style={{ color:"#5C6B57" }}>Details <ChevronRight size={12}/></button>
               </div>
               <div className="space-y-3.5">
@@ -506,51 +520,51 @@ export function OverviewPanel() {
                   <div key={h.label} className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: h.color }} />
-                      <span className="text-sm" style={{ color:"#4A4845" }}>{h.label}</span>
+                      <span className="text-sm" style={{ color:"var(--adm-text-2)" }}>{h.label}</span>
                     </div>
                     <span className="text-xs" style={{ color: h.color }}>{h.status}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs mt-5" style={{ color:"#C4BDB5" }}>Last checked: just now</p>
+              <p className="text-xs mt-5" style={{ color:"var(--adm-text-4)" }}>Last checked: just now</p>
             </motion.div>
           </div>
 
           {/* Recent Enrollments */}
-          <motion.div className="rounded-2xl overflow-hidden" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.7 }}>
-            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom:"1px solid #E8E1D6" }}>
-              <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Recent Enrollments</h3>
+          <motion.div className="rounded-2xl overflow-hidden" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.7 }}>
+            <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Recent Enrollments</h3>
               <button className="text-xs flex items-center gap-1" style={{ color:"#5C6B57" }}>View All <ChevronRight size={12}/></button>
             </div>
 
             {recentEnroll.length === 0 ? (
               <div className="px-6 py-10 text-center">
-                <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.2rem", color:"#9A9490", fontWeight:300 }}>No enrollments yet</p>
+                <p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.2rem", color:"var(--adm-text-3)", fontWeight:300 }}>No enrollments yet</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom:"1px solid #E8E1D6" }}>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                       {["STUDENT","PROGRAM","BATCH","ENROLLED ON","STATUS"].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"#9A9490", fontWeight:500 }}>{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"rgba(246,244,239,0.35)", fontWeight:400 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {recentEnroll.map((e, i) => (
-                      <tr key={e.id} style={{ borderBottom: i < recentEnroll.length - 1 ? "1px solid #F0EBE3" : "none" }}>
+                      <tr key={e.id} style={{ borderBottom: i < recentEnroll.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ background:"rgba(92,107,87,0.12)", color:"#5C6B57" }}>
                               {initials(e.userName ?? "?")}
                             </div>
-                            <span className="text-sm" style={{ color:"#2C2B29" }}>{e.userName ?? "Unknown"}</span>
+                            <span className="text-sm" style={{ color:"var(--adm-text)" }}>{e.userName ?? "Unknown"}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3 text-sm" style={{ color:"#4A4845" }}>{e.programTitle ?? e.programId}</td>
-                        <td className="px-5 py-3 text-sm" style={{ color:"#4A4845" }}>{e.batch}</td>
-                        <td className="px-5 py-3 text-sm" style={{ color:"#4A4845" }}>{fmtDate(e.createdAt)}</td>
+                        <td className="px-5 py-3 text-sm" style={{ color:"var(--adm-text-2)" }}>{e.programTitle ?? e.programId}</td>
+                        <td className="px-5 py-3 text-sm" style={{ color:"var(--adm-text-2)" }}>{e.batch}</td>
+                        <td className="px-5 py-3 text-sm" style={{ color:"var(--adm-text-2)" }}>{fmtDate(e.createdAt)}</td>
                         <td className="px-5 py-3">
                           <span className="text-[10px] font-semibold tracking-widest px-2.5 py-1 rounded-full" style={{
                             background: e.status === "active" ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)",
@@ -567,10 +581,10 @@ export function OverviewPanel() {
 
           {/* User Growth + Program Breakdown */}
           <div className="grid md:grid-cols-2 gap-4">
-            <motion.div className="rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.72 }}>
+            <motion.div className="rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.72 }}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>User Growth</h3>
-                <span className="text-xs" style={{ color:"#9A9490" }}>Last 7 days</span>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>User Growth</h3>
+                <span className="text-xs" style={{ color:"var(--adm-text-3)" }}>Last 7 days</span>
               </div>
               <div className="flex items-end gap-2 h-24 mb-4">
                 {weekBars.map(b => {
@@ -583,39 +597,39 @@ export function OverviewPanel() {
                   );
                 })}
               </div>
-              <div className="flex items-center gap-6 pt-4" style={{ borderTop:"1px solid #E8E1D6" }}>
-                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{data?.newUsersThisWeek ?? 0}</p><p className="text-xs" style={{ color:"#9A9490" }}>This Week</p></div>
-                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{data?.newUsersThisMonth ?? 0}</p><p className="text-xs" style={{ color:"#9A9490" }}>This Month</p></div>
-                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"#2C2B29" }}>{(data?.totalUsers ?? 0).toLocaleString("en-IN")}</p><p className="text-xs" style={{ color:"#9A9490" }}>Total</p></div>
+              <div className="flex items-center gap-6 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{data?.newUsersThisWeek ?? 0}</p><p className="text-xs" style={{ color:"var(--adm-text-3)" }}>This Week</p></div>
+                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{data?.newUsersThisMonth ?? 0}</p><p className="text-xs" style={{ color:"var(--adm-text-3)" }}>This Month</p></div>
+                <div><p style={{ fontFamily:"'Cormorant Garamond', serif", fontSize:"1.4rem", color:"var(--adm-text)" }}>{(data?.totalUsers ?? 0).toLocaleString("en-IN")}</p><p className="text-xs" style={{ color:"var(--adm-text-3)" }}>Total</p></div>
               </div>
             </motion.div>
 
-            <motion.div className="rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.76 }}>
+            <motion.div className="rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.76 }}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Program Breakdown</h3>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Program Breakdown</h3>
               </div>
               {progBreakdown.length === 0 ? (
-                <p className="text-sm" style={{ color:"#9A9490" }}>No programs yet</p>
+                <p className="text-sm" style={{ color:"var(--adm-text-3)" }}>No programs yet</p>
               ) : (
                 <div className="space-y-4">
                   {progBreakdown.map(p => (
-                    <div key={p.id} className="p-4 rounded-xl" style={{ background:"#FAFAF7", border:"1px solid #E8E1D6" }}>
+                    <div key={p.id} className="p-4 rounded-xl" style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium" style={{ color:"#2C2B29" }}>{p.title}</span>
+                        <span className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>{p.title}</span>
                         <span className="text-sm" style={{ color:"#5C6B57" }}>₹{(p.price / 100).toLocaleString("en-IN")}</span>
                       </div>
-                      <p className="text-xs mb-2" style={{ color:"#9A9490" }}>{p.enrolledCount} enrolled · {p.duration} days</p>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background:"#E8E1D6" }}>
+                      <p className="text-xs mb-2" style={{ color:"var(--adm-text-3)" }}>{p.enrolledCount} enrolled · {p.duration} days</p>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background:"rgba(255,255,255,0.08)" }}>
                         <div className="h-full rounded-full" style={{ width:`${p.completion}%`, background:"#5C6B57" }} />
                       </div>
-                      <p className="text-xs text-right mt-1" style={{ color:"#9A9490" }}>{p.completion}% attendance rate</p>
+                      <p className="text-xs text-right mt-1" style={{ color:"var(--adm-text-3)" }}>{p.completion}% attendance rate</p>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="mt-4 pt-3" style={{ borderTop:"1px solid #E8E1D6" }}>
-                <p className="text-xs text-center tracking-widest uppercase" style={{ color:"#9A9490" }}>
-                  TOTAL ACTIVE: <span style={{ color:"#2C2B29", fontWeight:600 }}>{data?.activeEnrollments ?? 0}</span>
+              <div className="mt-4 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-xs text-center tracking-widest uppercase" style={{ color:"var(--adm-text-3)" }}>
+                  TOTAL ACTIVE: <span style={{ color:"var(--adm-text)", fontWeight:600 }}>{data?.activeEnrollments ?? 0}</span>
                 </p>
               </div>
             </motion.div>
@@ -623,39 +637,39 @@ export function OverviewPanel() {
 
           {/* Mentor Performance */}
           {mentorRows.length > 0 && (
-            <motion.div className="rounded-2xl overflow-hidden" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.78 }}>
-              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom:"1px solid #E8E1D6" }}>
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Mentor Performance</h3>
+            <motion.div className="rounded-2xl overflow-hidden" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.78 }}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Mentor Performance</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr style={{ borderBottom:"1px solid #E8E1D6" }}>
+                    <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                       {["MENTOR","PROGRAM","STUDENTS","AVG ATTENDANCE","SESSIONS","THIS MONTH"].map(h => (
-                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"#9A9490", fontWeight:500 }}>{h}</th>
+                        <th key={h} className="px-5 py-3 text-left text-[10px] tracking-widest uppercase" style={{ color:"rgba(246,244,239,0.35)", fontWeight:400 }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {mentorRows.map((t, i) => (
-                      <tr key={t.uid} style={{ borderBottom: i < mentorRows.length - 1 ? "1px solid #F0EBE3" : "none" }}>
+                      <tr key={t.uid} style={{ borderBottom: i < mentorRows.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style={{ background:"#5C6B57", color:"#fff" }}>{t.initials}</div>
-                            <span className="text-sm font-medium" style={{ color:"#2C2B29" }}>{t.name}</span>
+                            <span className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>{t.name}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-sm" style={{ color:"#4A4845" }}>{t.program}</td>
-                        <td className="px-5 py-4 text-sm font-medium" style={{ color:"#2C2B29" }}>{t.students}</td>
+                        <td className="px-5 py-4 text-sm" style={{ color:"var(--adm-text-2)" }}>{t.program}</td>
+                        <td className="px-5 py-4 text-sm font-medium" style={{ color:"var(--adm-text)" }}>{t.students}</td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1.5">
-                            <div className="h-1.5 w-16 rounded-full overflow-hidden" style={{ background:"#E8E1D6" }}>
+                            <div className="h-1.5 w-16 rounded-full overflow-hidden" style={{ background:"rgba(255,255,255,0.08)" }}>
                               <div className="h-full rounded-full" style={{ width:`${t.attendance}%`, background:"#5C6B57" }} />
                             </div>
-                            <span className="text-sm" style={{ color:"#4A4845" }}>{t.attendance}%</span>
+                            <span className="text-sm" style={{ color:"var(--adm-text-2)" }}>{t.attendance}%</span>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-sm" style={{ color:"#4A4845" }}>{t.sessions} sessions</td>
+                        <td className="px-5 py-4 text-sm" style={{ color:"var(--adm-text-2)" }}>{t.sessions} sessions</td>
                         <td className="px-5 py-4 text-sm font-medium" style={{ color:"#5C6B57" }}>{fmtRupees(t.thisMonth)}</td>
                       </tr>
                     ))}
@@ -667,12 +681,12 @@ export function OverviewPanel() {
 
           {/* Activity + Notifications */}
           <div className="grid md:grid-cols-2 gap-4">
-            <motion.div className="rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.82 }}>
+            <motion.div className="rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.82 }}>
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Recent Activity</h3>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Recent Activity</h3>
               </div>
               {activityItems.length === 0 ? (
-                <p className="text-sm" style={{ color:"#9A9490" }}>No recent activity</p>
+                <p className="text-sm" style={{ color:"var(--adm-text-3)" }}>No recent activity</p>
               ) : (
                 <div className="space-y-4">
                   {activityItems.map((a, i) => (
@@ -681,8 +695,8 @@ export function OverviewPanel() {
                         {a.type === "enroll" ? <Users size={12} style={{ color:"#5C6B57" }}/> : a.type === "session" ? <CheckCircle2 size={12} style={{ color:"#22c55e" }}/> : <TrendingUp size={12} style={{ color:"#6366f1" }}/>}
                       </div>
                       <div>
-                        <p className="text-sm leading-relaxed" style={{ color:"#4A4845" }}>{a.text}</p>
-                        <p className="text-xs mt-0.5" style={{ color:"#C4BDB5" }}>{fmtDate(a.time)}</p>
+                        <p className="text-sm leading-relaxed" style={{ color:"var(--adm-text-2)" }}>{a.text}</p>
+                        <p className="text-xs mt-0.5" style={{ color:"var(--adm-text-4)" }}>{fmtDate(a.time)}</p>
                       </div>
                     </div>
                   ))}
@@ -690,15 +704,15 @@ export function OverviewPanel() {
               )}
             </motion.div>
 
-            <motion.div className="rounded-2xl p-6" style={{ background:"#fff", border:"1px solid #E8E1D6" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.86 }}>
+            <motion.div className="rounded-2xl p-6" style={{ background: "var(--adm-card)", border: "1px solid var(--adm-border)" }} initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.86 }}>
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-sm font-medium" style={{ color:"#2C2B29" }}>Notifications</h3>
+                <h3 className="text-sm font-medium" style={{ color:"var(--adm-text)" }}>Notifications</h3>
               </div>
               <div className="space-y-3">
                 {notifications.map((n, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background:"#FAFAF7", border:"1px solid #E8E1D6" }}>
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}>
                     <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: n.color }} />
-                    <p className="text-xs leading-relaxed" style={{ color:"#4A4845" }}>{n.text}</p>
+                    <p className="text-xs leading-relaxed" style={{ color:"var(--adm-text-2)" }}>{n.text}</p>
                   </div>
                 ))}
               </div>
