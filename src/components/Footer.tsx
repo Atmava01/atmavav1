@@ -209,7 +209,7 @@ export function Footer() {
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-7">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <motion.p
-            className="text-xs"
+            className="text-xs order-1"
             style={{ color: "rgba(246,244,239,0.25)", letterSpacing: "0.04em" }}
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
@@ -219,7 +219,7 @@ export function Footer() {
           </motion.p>
 
           <motion.p
-            className="text-[10px] tracking-[0.28em] uppercase"
+            className="text-[10px] tracking-[0.28em] uppercase order-3 md:order-2"
             style={{ color: "rgba(246,244,239,0.2)" }}
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}
@@ -229,7 +229,7 @@ export function Footer() {
           </motion.p>
 
           <motion.p
-            className="text-xs"
+            className="text-xs order-2 md:order-3"
             style={{ color: "rgba(246,244,239,0.25)", letterSpacing: "0.04em" }}
             initial={{ opacity: 0 }}
             animate={inView ? { opacity: 1 } : {}}

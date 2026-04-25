@@ -210,7 +210,7 @@ function LoginInner() {
           <div>
             <div className="flex justify-between mb-2">
               <label className="text-xs tracking-widest uppercase" style={{ color: "#4A4845" }}>Password</label>
-              <Link href="/auth/forgot-password">
+              <Link href={`/auth/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>
                 <span className="text-xs" style={{ color: "#5C6B57" }}>Forgot password?</span>
               </Link>
             </div>
