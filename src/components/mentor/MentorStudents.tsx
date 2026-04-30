@@ -40,8 +40,8 @@ export function MentorStudents() {
     return () => { cancelled = true; };
   }, [user, userProfile?.name]);
 
-  const batches = program?.batches.map(b => b.name) ?? [];
-  const levels  = program?.levels ?? [];
+  const batches = [...new Set(program?.batches.map(b => b.name) ?? [])];
+  const levels  = [...new Set(program?.levels ?? [])];
 
   const filtered = students.filter(row => {
     const s = row.userProfile;

@@ -9,9 +9,9 @@ import {
   TrendingUp, ChevronRight, BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { openSessionLaunch } from "@/lib/sessionLinks";
 import {
-  getPrograms, getStudentsForProgram, getSessionsByMentor,
+  getAssignedProgramForMentor, getStudentsForProgram, getSessionsByMentor,
   getAttendanceForSession, getMentorSessionStats,
   getPaymentsByProgram, getJournalsWithRatingForProgram,
 } from "@/lib/firestore";
@@ -194,7 +194,6 @@ function OverviewSection({
   liveSession: Session | null;
   onNavigate: (tab: string) => void;
 }) {
-  const router = useRouter();
   const today = new Date().toISOString().split("T")[0];
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -217,7 +216,7 @@ function OverviewSection({
       {liveSession && (
         <LiveBanner
           session={liveSession}
-          onJoin={() => router.push(`/session/${liveSession.id}`)}
+          onJoin={() => openSessionLaunch(liveSession.id, liveSession.meetLink)}
         />
       )}
 
@@ -300,7 +299,7 @@ function OverviewSection({
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {isLive ? (
                           <motion.button
-                            onClick={() => router.push(`/session/${s.id}`)}
+                            onClick={() => openSessionLaunch(s.id, s.meetLink)}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] tracking-widest uppercase font-semibold"
                             style={{ background: "#ef4444", color: "#fff" }}
                             whileHover={{ background: "#dc2626" }}
@@ -311,7 +310,7 @@ function OverviewSection({
                           </motion.button>
                         ) : isUpcoming ? (
                           <motion.button
-                            onClick={() => router.push(`/session/${s.id}`)}
+                            onClick={() => openSessionLaunch(s.id, s.meetLink)}
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] tracking-widest uppercase"
                             style={{ background: "rgba(122,140,116,0.15)", color: "#7A8C74" }}
                             whileHover={{ background: "rgba(122,140,116,0.25)" }}
@@ -1079,9 +1078,13 @@ export function MentorOverview() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  // greeting is derived client-side only to avoid SSR/hydration mismatch
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "morning" : h < 18 ? "afternoon" : "evening");
+  }, []);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const today = new Date().toISOString().split("T")[0];
 
   const navigateSidebar = useCallback((id: string) => {
@@ -1095,14 +1098,13 @@ export function MentorOverview() {
 
     async function load() {
       try {
-        const [allPrograms, mentorSessions, mentorStats] = await Promise.all([
-          getPrograms(),
+        const [myProgram, mentorSessions, mentorStats] = await Promise.all([
+          getAssignedProgramForMentor({ mentorId: user!.uid, mentorName: userProfile?.name }),
           getSessionsByMentor(user!.uid),
           getMentorSessionStats(user!.uid),
         ]);
         if (cancelled) return;
 
-        const myProgram = allPrograms.find(p => p.mentorId === user!.uid) ?? null;
         setProgram(myProgram);
         setAllSessions(mentorSessions);
         setStats(mentorStats);
@@ -1191,7 +1193,7 @@ export function MentorOverview() {
           </p>
           <p className="text-xs mt-1" style={{ color: "rgba(246,244,239,0.35)" }}>
             {program
-              ? `${program.duration} days${program.mentorName ? ` · Mentor record: ${program.mentorName}` : ""}`
+              ? `${program.duration} ${program.duration === 1 ? "day" : "days"}${program.mentorName ? ` · Mentor record: ${program.mentorName}` : ""}`
               : "Ask admin to assign this mentor to a Firestore program."}
           </p>
         </div>

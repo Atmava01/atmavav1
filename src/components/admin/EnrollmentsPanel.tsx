@@ -83,7 +83,8 @@ export function EnrollmentsPanel() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const userMap = useMemo(() => new Map(users.map(u => [u.uid, u])), [users]);
+  const userMap    = useMemo(() => new Map(users.map(u => [u.uid, u])), [users]);
+  const programMap = useMemo(() => new Map(programs.map(p => [p.id, p])), [programs]);
 
   const filteredUsers = users.filter(u =>
     u.role === "user" &&
@@ -256,14 +257,18 @@ export function EnrollmentsPanel() {
                 >
                   {programs.map(p => (
                     <option key={p.id} value={p.id} style={{ background: "#1C1B19" }}>
-                      {p.title ? `${p.title} (${p.duration}d)` : `${p.duration}-Day Program`}
+                      {p.title
+                        ? `${p.title} (${p.duration} ${p.duration === 1 ? "day" : "days"})`
+                        : `${p.duration}-${p.duration === 1 ? "Day" : "Day"} Program`}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs mb-1.5 block" style={{ color: "var(--adm-text-2)" }}>Start Date (optional)</label>
+                <label className="text-xs mb-1.5 block" style={{ color: "var(--adm-text-2)" }}>
+                  {programMap.get(grantProgram)?.duration === 1 ? "Program Date" : "Start Date (optional)"}
+                </label>
                 <input type="date" value={grantStart} onChange={e => setGrantStart(e.target.value)} style={inputStyle} />
               </div>
 
@@ -274,7 +279,7 @@ export function EnrollmentsPanel() {
                     <label className="text-xs mb-1.5 block" style={{ color: "var(--adm-text-2)" }}>Level</label>
                     <select value={grantLevel} onChange={e => setGrantLevel(e.target.value)} style={inputStyle} className="admin-select">
                       <option value="" style={{ background: "#1C1B19" }}>Select level…</option>
-                      {prog.levels.map(l => <option key={l} value={l} style={{ background: "#1C1B19" }}>{l}</option>)}
+                      {prog.levels.map((l, li) => <option key={`${l}-${li}`} value={l} style={{ background: "#1C1B19" }}>{l}</option>)}
                     </select>
                   </div>
                 ) : null;
@@ -287,7 +292,7 @@ export function EnrollmentsPanel() {
                     <label className="text-xs mb-1.5 block" style={{ color: "var(--adm-text-2)" }}>Batch</label>
                     <select value={grantBatch} onChange={e => setGrantBatch(e.target.value)} style={inputStyle} className="admin-select">
                       <option value="" style={{ background: "#1C1B19" }}>Select batch…</option>
-                      {prog.batches.map(b => <option key={b.name} value={b.name} style={{ background: "#1C1B19" }}>{b.name} · {b.time}</option>)}
+                      {prog.batches.map((b, bi) => <option key={`${b.name}-${bi}`} value={b.name} style={{ background: "#1C1B19" }}>{b.name} · {b.time}</option>)}
                     </select>
                   </div>
                 ) : null;
@@ -385,7 +390,10 @@ export function EnrollmentsPanel() {
                   <tbody>
                     {filteredEnrollments.map((e, i) => {
                       const u = userMap.get(e.userId);
+                      const prog = programMap.get(e.programId);
+                      const isOneDay = prog?.duration === 1;
                       const isActive = e.status === "active" && e.endDate > new Date().toISOString();
+                      const progLabel = prog?.title ?? `${e.programId}-Day`;
                       return (
                         <motion.tr
                           key={e.id}
@@ -402,18 +410,24 @@ export function EnrollmentsPanel() {
                           </td>
                           <td className="hidden md:table-cell">
                             <div>
-                              <span>{e.programId}-Day</span>
+                              <span>{progLabel}</span>
                               {e.level && <span style={{ color: "var(--adm-text-2)" }}> · {e.level}</span>}
                               {e.batch && <span style={{ color: "var(--adm-text-2)" }}> · {e.batch}</span>}
                             </div>
                           </td>
                           <td className="hidden sm:table-cell" style={{ color: "var(--adm-text-3)", fontSize: "0.75rem" }}>
-                            {new Date(e.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                            {" → "}
-                            {new Date(e.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                            {isOneDay ? (
+                              new Date(e.startDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                            ) : (
+                              <>
+                                {new Date(e.startDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                {" → "}
+                                {new Date(e.endDate + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                              </>
+                            )}
                           </td>
                           <td className="hidden lg:table-cell">
-                            {isActive && e.remainingDays !== undefined ? (
+                            {!isOneDay && isActive && e.remainingDays !== undefined ? (
                               <span className="text-xs" style={{ color: e.remainingDays < 7 ? "#D47070" : "#8FA888" }}>
                                 {e.remainingDays}d left
                               </span>
@@ -422,7 +436,7 @@ export function EnrollmentsPanel() {
                           <td>
                             {isActive && (
                               <div className="flex items-center gap-1.5">
-                                {extendId === e.id ? (
+                                {!isOneDay && extendId === e.id ? (
                                   <div className="flex items-center gap-1">
                                     <input
                                       type="date"
@@ -440,15 +454,17 @@ export function EnrollmentsPanel() {
                                   </div>
                                 ) : (
                                   <>
-                                    <button
-                                      onClick={() => { setExtendId(e.id); setExtendDate(e.endDate); }}
-                                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-all"
-                                      style={{ background: "rgba(92,107,87,0.12)", color: "#8FA888", border: "1px solid rgba(92,107,87,0.25)" }}
-                                      onMouseEnter={ev => (ev.currentTarget.style.background = "rgba(92,107,87,0.22)")}
-                                      onMouseLeave={ev => (ev.currentTarget.style.background = "rgba(92,107,87,0.12)")}
-                                    >
-                                      <CalendarClock size={10} /> Extend
-                                    </button>
+                                    {!isOneDay && (
+                                      <button
+                                        onClick={() => { setExtendId(e.id); setExtendDate(e.endDate); }}
+                                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-all"
+                                        style={{ background: "rgba(92,107,87,0.12)", color: "#8FA888", border: "1px solid rgba(92,107,87,0.25)" }}
+                                        onMouseEnter={ev => (ev.currentTarget.style.background = "rgba(92,107,87,0.22)")}
+                                        onMouseLeave={ev => (ev.currentTarget.style.background = "rgba(92,107,87,0.12)")}
+                                      >
+                                        <CalendarClock size={10} /> Extend
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => handleRevoke(e.id)}
                                       className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-all"

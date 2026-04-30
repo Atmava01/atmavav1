@@ -664,6 +664,24 @@ export async function getTodaySessionsForProgram(programId: string): Promise<Ses
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
+export function subscribeTodaySessionsForProgram(
+  programId: string,
+  callback: (sessions: Session[]) => void
+): () => void {
+  const today = todayStr();
+  const q = query(
+    collection(db, "sessions"),
+    where("programId", "==", programId),
+    where("date", "==", today)
+  );
+  return onSnapshot(q, snap => {
+    const sessions = snap.docs
+      .map(d => ({ id: d.id, ...d.data() } as Session))
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    callback(sessions);
+  });
+}
+
 // ─── Community activity ───────────────────────────────────────────────────────
 
 export async function getProgramActivity(

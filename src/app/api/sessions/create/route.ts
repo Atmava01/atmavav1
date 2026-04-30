@@ -8,13 +8,14 @@
  *   Content-Type: application/json
  *
  * Body:
- *   { programId, title, date, startTime, endTime, meetLink }
+ *   { programId, title, date, startTime, endTime, batch }
  *
  * Response:
- *   { success: true, sessionId: string }
+ *   { success: true, sessionId: string, meetLink: string }
  */
 import { NextRequest, NextResponse } from "next/server";
 import { verifyFirebaseToken, adminDb } from "@/lib/firebaseAdmin";
+import { buildSessionMeetLink } from "@/lib/sessionLinks";
 
 export async function POST(req: NextRequest) {
   const uid = await verifyFirebaseToken(req);
@@ -38,13 +39,12 @@ export async function POST(req: NextRequest) {
     date?: string;
     startTime?: string;
     endTime?: string;
-    meetLink?: string;
     batch?: string;
   };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
-  const { programId, title, date, startTime, endTime, meetLink, batch = "" } = body;
+  const { programId, title, date, startTime, endTime, batch = "" } = body;
 
   if (!programId || !title || !date || !startTime || !endTime) {
     return NextResponse.json(
@@ -55,18 +55,21 @@ export async function POST(req: NextRequest) {
 
   const mentorName: string = userSnap.data()?.name ?? "Mentor";
 
-  const sessionRef = await db.collection("sessions").add({
+  const sessionRef = db.collection("sessions").doc();
+  const meetLink = buildSessionMeetLink(sessionRef.id);
+
+  await sessionRef.set({
     programId,
-    mentorId:   uid,
+    mentorId: uid,
     mentorName,
     title,
     date,
     startTime,
     endTime,
-    meetLink:   meetLink ?? "",
+    meetLink,
     batch,
-    createdAt:  new Date().toISOString(),
+    createdAt: new Date().toISOString(),
   });
 
-  return NextResponse.json({ success: true, sessionId: sessionRef.id });
+  return NextResponse.json({ success: true, sessionId: sessionRef.id, meetLink });
 }

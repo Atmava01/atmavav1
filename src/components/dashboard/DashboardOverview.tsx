@@ -15,6 +15,8 @@ import {
 } from "@/lib/firestore";
 import { getPrograms } from "@/lib/firestore";
 import { PaymentModal } from "@/components/PaymentModal";
+import { openSessionLaunch } from "@/lib/sessionLinks";
+import { filterSessionsForEnrollment } from "@/lib/studentSessions";
 import type { Enrollment, Program, Session, Attendance } from "@/types";
 import type { MoodLog } from "@/lib/firestore";
 
@@ -267,7 +269,11 @@ export function DashboardOverview() {
         ]);
 
       const today = todayStr();
-      const upcomingSessions = allSessions
+      const filteredTodaySessions = filterSessionsForEnrollment(todaySessions, enrollment)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      const filteredAllSessions = filterSessionsForEnrollment(allSessions, enrollment);
+
+      const upcomingSessions = filteredAllSessions
         .filter(s => s.date > today)
         .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
         .slice(0, 4);
@@ -278,7 +284,7 @@ export function DashboardOverview() {
       const weekDays = buildWeekDays(presentDates);
 
       setData({
-        enrollment, program, todaySessions, upcomingSessions,
+        enrollment, program, todaySessions: filteredTodaySessions, upcomingSessions,
         attendance, moodByDate,
         todayMood: todayMoodLog?.mood ?? null,
         stats, weekDays,
@@ -359,7 +365,7 @@ export function DashboardOverview() {
                 whileHover={{ borderColor: "#5C6B57" }}
               >
                 <div>
-                  <p className="text-xs tracking-widest uppercase" style={{ color: "#5C6B57" }}>{prog.duration} Days</p>
+                  <p className="text-xs tracking-widest uppercase" style={{ color: "#5C6B57" }}>{prog.duration} {prog.duration === 1 ? "Day" : "Days"}</p>
                   <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", color: "#2C2B29", fontWeight: 400 }}>{prog.title}</p>
                   <p className="text-xs mt-0.5" style={{ color: "#4A4845" }}>₹{prog.price.toLocaleString("en-IN")}</p>
                 </div>
@@ -434,7 +440,7 @@ export function DashboardOverview() {
         {liveSession && (
           <div className="flex-shrink-0">
             <motion.div
-              onClick={() => router.push(`/session/${liveSession.id}`)}
+              onClick={() => openSessionLaunch(liveSession.id, liveSession.meetLink)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer"
               style={{ background: "#1E1D1B", color: "#F6F4EF" }}
               animate={{ boxShadow: ["0 0 0 0 rgba(92,107,87,0.4)", "0 0 0 6px rgba(92,107,87,0)", "0 0 0 0 rgba(92,107,87,0.4)"] }}
@@ -471,7 +477,7 @@ export function DashboardOverview() {
                 </p>
                 <div className="flex flex-wrap gap-3 mt-4">
                   <motion.button
-                      onClick={() => router.push(`/session/${liveSession.id}`)}
+                      onClick={() => openSessionLaunch(liveSession.id, liveSession.meetLink)}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm tracking-widest uppercase"
                       style={{ background: "#5C6B57", color: "#F6F4EF", border: "none" }}
                       whileHover={{ background: "#4A5948" }} whileTap={{ scale: 0.97 }}

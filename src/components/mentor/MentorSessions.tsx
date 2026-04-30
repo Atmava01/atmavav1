@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Edit2, Trash2, Copy, ExternalLink, Calendar, Users, Play } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { buildSessionMeetLink, openSessionLaunch } from "@/lib/sessionLinks";
 import {
   getSessionsByMentor,
   getMentorAssignmentSnapshot,
@@ -19,7 +19,7 @@ type StudentRow = { enrollment: Enrollment; userProfile: UserProfile };
 
 const EMPTY_FORM = {
   title: "",
-  programId: "30",
+  programId: "",
   batch: "",
   date: new Date().toISOString().split("T")[0],
   startTime: "06:30",
@@ -46,7 +46,6 @@ function parseBatchTime(batchTime: string): string | null {
 
 export function MentorSessions() {
   const { user, userProfile } = useAuth();
-  const router = useRouter();
 
   const [sessions, setSessions]     = useState<Session[]>([]);
   const [program, setProgram]       = useState<Program | null>(null);
@@ -124,8 +123,9 @@ export function MentorSessions() {
 
   // ── Create ──────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
-    if (!user || !form.title || !form.date) {
-      setFormError("Please fill in title and date.");
+    const programId = program?.id ?? form.programId;
+    if (!user || !form.title || !form.date || !programId) {
+      setFormError("Please fill in title, date, and assigned program.");
       return;
     }
     setSaving(true); setFormError("");
@@ -135,20 +135,19 @@ export function MentorSessions() {
         method:  "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          programId: form.programId,
+          programId,
           batch: form.batch,
           title: form.title,
           date: form.date,
           startTime: form.startTime,
           endTime: form.endTime,
-          meetLink: "",
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed to create session");
-      const { sessionId } = await res.json();
+      const { sessionId, meetLink } = await res.json();
       const newSess: Session = {
         id: sessionId,
-        programId: form.programId,
+        programId,
         batch: form.batch,
         mentorId: user.uid,
         mentorName: userProfile?.name ?? "Mentor",
@@ -156,18 +155,9 @@ export function MentorSessions() {
         date: form.date,
         startTime: form.startTime,
         endTime: form.endTime,
-        meetLink: form.meetLink,
+        meetLink: meetLink ?? buildSessionMeetLink(sessionId),
         createdAt: new Date().toISOString(),
       };
-      // Auto-update meetLink to Jitsi room derived from sessionId
-      const jitsiLink = `https://meet.jit.si/atmava-session-${sessionId}`;
-      newSess.meetLink = jitsiLink;
-      // Best-effort update in background
-      fetch(`/api/sessions/${sessionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ meetLink: jitsiLink }),
-      }).catch(() => {});
 
       setSessions(prev => [...prev, newSess].sort((a, z) => a.date.localeCompare(z.date)));
       setForm(f => ({ ...EMPTY_FORM, programId: f.programId, batch: f.batch }));
@@ -204,21 +194,13 @@ export function MentorSessions() {
           date:      dateStr,
           startTime,
           endTime,
-          meetLink:  "",
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
       const { sessionId } = await res.json();
 
-      const jitsiLink = `https://meet.jit.si/atmava-session-${sessionId}`;
-      fetch(`/api/sessions/${sessionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ meetLink: jitsiLink }),
-      }).catch(() => {});
-
       setQuickStartConfirm(false);
-      router.push(`/session/${sessionId}`);
+      openSessionLaunch(sessionId);
     } catch (e) {
       setQuickStartError(e instanceof Error ? e.message : "Something went wrong. Try again.");
     } finally {
@@ -699,7 +681,7 @@ export function MentorSessions() {
                       {/* Start/Join — only while live or upcoming today */}
                       {isToday && !isOver && (
                         <motion.button
-                          onClick={() => router.push(`/session/${s.id}`)}
+                          onClick={() => openSessionLaunch(s.id, s.meetLink)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                           style={{
                             background: isLive ? "rgba(220,38,38,0.2)" : "rgba(122,140,116,0.15)",
@@ -761,7 +743,7 @@ export function MentorSessions() {
                           : <Copy size={12} />}
                       </motion.button>
                       <motion.button
-                        onClick={() => router.push(`/session/${s.id}`)}
+                        onClick={() => openSessionLaunch(s.id, s.meetLink)}
                         className="p-2 rounded-lg"
                         style={{ background: "rgba(255,255,255,0.06)", color: "rgba(246,244,239,0.5)" }}
                         title="Open session room"

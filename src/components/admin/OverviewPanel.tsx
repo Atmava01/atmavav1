@@ -145,10 +145,12 @@ export function OverviewPanel() {
   const totalRevPaid = payments.filter(p => p.status === "paid").reduce((s, p) => s + (p.amount ?? 0), 0);
 
   // Revenue bars — last 12 months
+  // Use new Date(year, month, 1) to avoid day-of-month overflow (e.g. Apr 30 → setMonth(Feb) → Mar 2)
   const revBars = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(); d.setMonth(d.getMonth() - (11 - i));
-    const key = d.toISOString().slice(0, 7);
-    return { month: MONTH_LABELS[d.getMonth()], amount: rByMonth[key] ?? 0, isCurrent: key === curMonth };
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+    const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return { month: MONTH_LABELS[d.getMonth()], yearMonth, amount: rByMonth[yearMonth] ?? 0, isCurrent: yearMonth === curMonth };
   });
   const maxRev = Math.max(...revBars.map(b => b.amount), 1);
 
@@ -158,7 +160,7 @@ export function OverviewPanel() {
     const dayLabel = d.toLocaleDateString("en-US", { weekday:"short" }).slice(0, 3);
     const dateStr  = d.toISOString().split("T")[0];
     const count    = (data?.recentEnrollments ?? []).filter(e => e.createdAt?.startsWith(dateStr)).length;
-    return { day: dayLabel, count, isToday: i === 6 };
+    return { day: dayLabel, dateStr, count, isToday: i === 6 };
   });
   const maxWeek = Math.max(...weekBars.map(b => b.count), 1);
 
@@ -475,7 +477,7 @@ export function OverviewPanel() {
               {totalRevPaid === 0 ? (
                 <div className="flex items-end gap-1.5 h-28 mb-4">
                   {revBars.map(b => (
-                    <div key={b.month} className="flex-1 flex flex-col items-center gap-1">
+                    <div key={b.yearMonth} className="flex-1 flex flex-col items-center gap-1">
                       <div className="w-full rounded-t-md" style={{ height:"10%", background:"rgba(92,107,87,0.1)" }} />
                       <span className="text-[9px]" style={{ color:"var(--adm-text-4)" }}>{b.month}</span>
                     </div>
@@ -486,7 +488,7 @@ export function OverviewPanel() {
                   {revBars.map(b => {
                     const h = Math.max(4, Math.round((b.amount / maxRev) * 100));
                     return (
-                      <div key={b.month} className="flex-1 flex flex-col items-center gap-1">
+                      <div key={b.yearMonth} className="flex-1 flex flex-col items-center gap-1">
                         <div className="w-full rounded-t-md" style={{ height:`${h}%`, background: b.isCurrent ? "#5C6B57" : "rgba(92,107,87,0.3)" }} />
                         <span className="text-[9px]" style={{ color: b.isCurrent ? "#5C6B57" : "#C4BDB5" }}>{b.month}</span>
                       </div>
@@ -590,7 +592,7 @@ export function OverviewPanel() {
                 {weekBars.map(b => {
                   const h = Math.max(4, Math.round((b.count / maxWeek) * 100));
                   return (
-                    <div key={b.day} className="flex-1 flex flex-col items-center gap-1">
+                    <div key={b.dateStr} className="flex-1 flex flex-col items-center gap-1">
                       <div className="w-full rounded-t-md" style={{ height:`${h}%`, background: b.isToday ? "#5C6B57" : "rgba(92,107,87,0.3)" }} />
                       <span className="text-[9px]" style={{ color: b.isToday ? "#5C6B57" : "#C4BDB5" }}>{b.day}</span>
                     </div>
@@ -690,7 +692,7 @@ export function OverviewPanel() {
               ) : (
                 <div className="space-y-4">
                   {activityItems.map((a, i) => (
-                    <div key={i} className="flex items-start gap-3">
+                    <div key={`${a.type}-${a.time ?? i}`} className="flex items-start gap-3">
                       <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: a.type === "enroll" ? "rgba(92,107,87,0.1)" : a.type === "session" ? "rgba(34,197,94,0.1)" : "rgba(99,102,241,0.1)" }}>
                         {a.type === "enroll" ? <Users size={12} style={{ color:"#5C6B57" }}/> : a.type === "session" ? <CheckCircle2 size={12} style={{ color:"#22c55e" }}/> : <TrendingUp size={12} style={{ color:"#6366f1" }}/>}
                       </div>
@@ -710,7 +712,7 @@ export function OverviewPanel() {
               </div>
               <div className="space-y-3">
                 {notifications.map((n, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}>
+                  <div key={`${n.color}-${i}`} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: "var(--adm-elevated)", border: "1px solid var(--adm-border)" }}>
                     <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: n.color }} />
                     <p className="text-xs leading-relaxed" style={{ color:"var(--adm-text-2)" }}>{n.text}</p>
                   </div>

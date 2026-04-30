@@ -5,9 +5,10 @@ import { motion } from "framer-motion";
 import { CalendarDays, AlertCircle, Video } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getActiveEnrollment, getSessionsForProgram, getAttendanceForUser } from "@/lib/firestore";
-import type { Enrollment, Session, Attendance } from "@/types";
+import { openSessionLaunch } from "@/lib/sessionLinks";
+import { filterSessionsForEnrollment, getEnrollmentBatchLabel } from "@/lib/studentSessions";
+import type { Enrollment, Session } from "@/types";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 function fmtTime(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -31,7 +32,6 @@ function groupByWeek(sessions: Session[]): { label: string; sessions: Session[] 
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
-    const label = `${monday.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${sunday.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`;
     const key = monday.toISOString().split("T")[0];
 
     if (!groups.has(key)) groups.set(key, []);
@@ -56,7 +56,6 @@ function groupByWeek(sessions: Session[]): { label: string; sessions: Session[] 
 
 export function SchedulePanel() {
   const { user } = useAuth();
-  const router = useRouter();
   const [enrollment, setEnrollment] = useState<Enrollment | null | undefined>(undefined);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [attendedDates, setAttendedDates] = useState<Set<string>>(new Set());
@@ -73,8 +72,8 @@ export function SchedulePanel() {
           getSessionsForProgram(e.programId),
           getAttendanceForUser(user.uid, e.programId, 200),
         ]);
-        const upcoming = allSessions
-          .filter(s => s.date >= today && (s.batch === e.batch || !s.batch))
+        const upcoming = filterSessionsForEnrollment(allSessions, e)
+          .filter(s => s.date >= today)
           .slice(0, 60);
         setSessions(upcoming);
         setAttendedDates(new Set(attendance.filter(a => a.present).map(a => a.date)));
@@ -108,6 +107,7 @@ export function SchedulePanel() {
 
   const today = new Date().toISOString().split("T")[0];
   const weeks = groupByWeek(sessions);
+  const batchLabel = getEnrollmentBatchLabel(enrollment, sessions);
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -116,7 +116,7 @@ export function SchedulePanel() {
           Schedule
         </h1>
         <p className="text-xs mt-1" style={{ color: "#4A4845" }}>
-          Upcoming sessions · {enrollment.batch} Batch
+          Upcoming sessions · {batchLabel} Batch
         </p>
       </div>
 
@@ -183,7 +183,7 @@ export function SchedulePanel() {
                     </div>
                     {isToday && (
                         <motion.button
-                          onClick={() => router.push(`/session/${s.id}`)}
+                          onClick={() => openSessionLaunch(s.id, s.meetLink)}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs flex-shrink-0"
                           style={{ background: "#5C6B57", color: "#F6F4EF" }}
                           whileHover={{ background: "#4A5845" }}
