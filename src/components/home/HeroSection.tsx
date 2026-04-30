@@ -146,14 +146,6 @@ export function HeroSection() {
         style={{ opacity }}
         onClick={() => window.scrollTo({ top: window.innerHeight, behavior: "smooth" })}
       >
-        <motion.span
-          className="text-xs tracking-[0.2em] uppercase"
-          style={{ color: "#4A4845" }}
-          animate={{ opacity: [0.4, 0.9, 0.4] }}
-          transition={{ duration: 2.5, repeat: Infinity }}
-        >
-          Scroll
-        </motion.span>
         <motion.div
           animate={{ y: [0, 6, 0] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
