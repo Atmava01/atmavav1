@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { buildJitsiRoomName } from "@/lib/sessionLinks";
 import {
   sendChatMessage, subscribeToChatMessages, getStudentsForProgram,
   requestMicPermission, respondToMicRequest,
@@ -354,7 +355,7 @@ export function SessionRoom({ session }: Props) {
   const [micOn,  setMicOn]  = useState(isMentor);   // mentor starts unmuted, students muted
   const [camOn,  setCamOn]  = useState(true);
   const [onlineCount, setOnlineCount] = useState(1);
-  const roomName = `atmava-session-${session.id}`;
+  const roomName = buildJitsiRoomName(session.id);
 
   const initJitsi = useCallback(() => {
     if (!jitsiRef.current || !(window as any).JitsiMeetExternalAPI || jitsiApi.current) return;
@@ -403,23 +404,36 @@ export function SessionRoom({ session }: Props) {
     api.addEventListener("videoConferenceLeft",    () => router.push(isMentor ? "/mentor" : "/dashboard/today"));
   }, [roomName, user, userProfile, isMentor, router]);
 
+  const [jitsiScriptReady, setJitsiScriptReady] = useState(
+    typeof window !== "undefined" && !!(window as any).JitsiMeetExternalAPI
+  );
+
+  // Load external Jitsi script once; track readiness separately from init
   useEffect(() => {
-    let script: HTMLScriptElement | null = null;
     if ((window as any).JitsiMeetExternalAPI) {
-      initJitsi();
-    } else {
-      script = document.createElement("script");
-      script.src = "https://meet.jit.si/external_api.js";
-      script.async = true;
-      script.onload = initJitsi;
-      document.head.appendChild(script);
+      setJitsiScriptReady(true);
+      return () => {
+        jitsiApi.current?.dispose();
+        jitsiApi.current = null;
+      };
     }
+    const script = document.createElement("script");
+    script.src = "https://meet.jit.si/external_api.js";
+    script.async = true;
+    script.onload = () => setJitsiScriptReady(true);
+    document.head.appendChild(script);
     return () => {
       jitsiApi.current?.dispose();
       jitsiApi.current = null;
-      if (script && document.head.contains(script)) document.head.removeChild(script);
+      if (document.head.contains(script)) document.head.removeChild(script);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Init Jitsi only after BOTH the script is ready AND auth user is loaded
+  useEffect(() => {
+    if (!jitsiScriptReady || !user) return;
+    initJitsi();
+  }, [jitsiScriptReady, user, initJitsi]);
 
   const toggleMic = () => jitsiApi.current?.executeCommand("toggleAudio");
   const toggleCam = () => jitsiApi.current?.executeCommand("toggleVideo");

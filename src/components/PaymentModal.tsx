@@ -137,7 +137,7 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
           amount,
           currency,
           name:        "Atmava",
-          description: `${programTitle} — ${durationDays} Days`,
+          description: `${programTitle} — ${durationDays} ${durationDays === 1 ? "Day" : "Days"}`,
           image:       "/favicon.ico",
           prefill: {
             name:  user.displayName ?? "",
@@ -330,9 +330,9 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
                       Select Level <span style={{ color: "rgba(220,60,60,0.8)" }}>*</span>
                     </p>
                     <div className="space-y-2">
-                      {(program?.levels ?? []).map(level => (
+                      {(program?.levels ?? []).map((level, li) => (
                         <button
-                          key={level}
+                          key={`${level}-${li}`}
                           style={optionStyle(selectedLevel === level)}
                           onClick={() => { setSelectedLevel(level); setSelectError(""); }}
                         >
@@ -353,9 +353,9 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
                       Select Batch <span style={{ color: "rgba(220,60,60,0.8)" }}>*</span>
                     </p>
                     <div className="space-y-2">
-                      {(program?.batches ?? []).map(batch => (
+                      {(program?.batches ?? []).map((batch, bi) => (
                         <button
-                          key={batch.name}
+                          key={`${batch.name}-${bi}`}
                           style={optionStyle(selectedBatch === batch.name)}
                           onClick={() => { setSelectedBatch(batch.name); setSelectError(""); }}
                         >
@@ -417,7 +417,7 @@ export function PaymentModal({ programId, programTitle, durationDays, price, onC
               {/* Summary table */}
               <div className="rounded-xl mb-5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 {[
-                  { label: "Program",  val: `${durationDays}-Day Journey` },
+                  { label: "Program",  val: durationDays === 1 ? "1-Day Session" : `${durationDays}-Day Journey` },
                   { label: "Level",    val: selectedLevel },
                   { label: "Batch",    val: selectedBatch },
                   { label: "Currency", val: "INR (Indian Rupee)" },

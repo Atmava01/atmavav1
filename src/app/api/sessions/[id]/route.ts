@@ -43,18 +43,20 @@ export async function PUT(
     endTime?: string;
     meetLink?: string;
     programId?: string;
+    batch?: string;
   };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 }); }
 
   // Only update provided fields
   const updates: Record<string, string> = {};
-  if (body.title)     updates.title     = body.title;
-  if (body.date)      updates.date      = body.date;
-  if (body.startTime) updates.startTime = body.startTime;
-  if (body.endTime)   updates.endTime   = body.endTime;
-  if (body.meetLink)  updates.meetLink  = body.meetLink;
-  if (body.programId) updates.programId = body.programId;
+  if (body.title !== undefined)     updates.title     = body.title;
+  if (body.date !== undefined)      updates.date      = body.date;
+  if (body.startTime !== undefined) updates.startTime = body.startTime;
+  if (body.endTime !== undefined)   updates.endTime   = body.endTime;
+  if (body.meetLink !== undefined)  updates.meetLink  = body.meetLink;
+  if (body.programId !== undefined) updates.programId = body.programId;
+  if (body.batch !== undefined)     updates.batch     = body.batch;
 
   await sessionRef.update(updates);
 

@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Video, AlertCircle, CheckCircle, History, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getActiveEnrollment, getTodaySessionsForProgram, getAttendanceForUser } from "@/lib/firestore";
-import type { Enrollment, Session, Attendance } from "@/types";
+import { getActiveEnrollment, subscribeTodaySessionsForProgram, getAttendanceForUser } from "@/lib/firestore";
+import { openSessionLaunch } from "@/lib/sessionLinks";
+import { filterSessionsForEnrollment, getEnrollmentBatchLabel } from "@/lib/studentSessions";
+import type { Enrollment, Session } from "@/types";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 function fmtTime(t: string) {
   const [h, m] = t.split(":").map(Number);
@@ -61,39 +62,45 @@ function isPast(s: Session) {
 
 export function TodayPanel() {
   const { user } = useAuth();
-  const router = useRouter();
   const [enrollment, setEnrollment] = useState<Enrollment | null | undefined>(undefined);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [attendedIds, setAttendedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [, setNow] = useState(new Date());
 
-  // Refresh every 30s to update live/awaiting state
+  // Refresh every 10s to update live/awaiting state without relying solely on real-time
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 30000);
+    const interval = setInterval(() => setNow(new Date()), 10000);
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (!user) return;
+    let unsubSessions: (() => void) | null = null;
+
     (async () => {
       const e = await getActiveEnrollment(user.uid);
       setEnrollment(e);
       if (e) {
-        const [todaySessions, attendance] = await Promise.all([
-          getTodaySessionsForProgram(e.programId),
+        const [attendance] = await Promise.all([
           getAttendanceForUser(user.uid, e.programId, 200),
         ]);
         const today = new Date().toISOString().split("T")[0];
-        const filtered = todaySessions.filter(s => s.batch === e.batch || !s.batch);
-        setSessions(filtered);
         const ids = new Set(
           attendance.filter(a => a.date === today && a.present).map(a => a.sessionId)
         );
         setAttendedIds(ids);
+
+        // Real-time listener so newly created sessions appear without refresh
+        unsubSessions = subscribeTodaySessionsForProgram(e.programId, (allSessions) => {
+          const filtered = filterSessionsForEnrollment(allSessions, e);
+          setSessions(filtered);
+        });
       }
       setLoading(false);
     })();
+
+    return () => { unsubSessions?.(); };
   }, [user]);
 
   if (loading || enrollment === undefined) {
@@ -120,6 +127,7 @@ export function TodayPanel() {
   }
 
   const liveSession = sessions.find(s => isLive(s));
+  const batchLabel = getEnrollmentBatchLabel(enrollment, sessions);
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -129,7 +137,7 @@ export function TodayPanel() {
         </h1>
         <p className="text-xs mt-1" style={{ color: "#4A4845" }}>
           {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
-          {" · "}{enrollment.batch} Batch
+          {" · "}{batchLabel} Batch
         </p>
       </div>
 
@@ -158,7 +166,7 @@ export function TodayPanel() {
               </p>
             </div>
             <motion.button
-              onClick={() => router.push(`/session/${liveSession.id}`)}
+              onClick={() => openSessionLaunch(liveSession.id, liveSession.meetLink)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold flex-shrink-0"
               style={{ background: "#dc2626", color: "#fff" }}
               whileHover={{ background: "#b91c1c" }}
@@ -274,7 +282,7 @@ export function TodayPanel() {
                   <div className="flex-shrink-0">
                     {live ? (
                       <motion.button
-                        onClick={() => router.push(`/session/${s.id}`)}
+                        onClick={() => openSessionLaunch(s.id, s.meetLink)}
                         className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-semibold"
                         style={{ background: "#dc2626", color: "#fff" }}
                         whileHover={{ background: "#b91c1c" }}
@@ -287,7 +295,7 @@ export function TodayPanel() {
                       </motion.button>
                     ) : awaiting ? (
                       <motion.button
-                        onClick={() => router.push(`/session/${s.id}`)}
+                        onClick={() => openSessionLaunch(s.id, s.meetLink)}
                         className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs"
                         style={{ background: "#F6F4EF", color: "#4A4845", border: "1px solid #D4CCBF" }}
                         whileHover={{ background: "#EDE8E0" }}

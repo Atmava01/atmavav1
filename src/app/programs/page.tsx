@@ -101,7 +101,7 @@ function ProgramCard({
       >
         <div>
           <span className="text-xs tracking-[0.22em] uppercase block mb-2" style={{ color: "#5C6B57" }}>
-            {prog.duration} Days
+            {prog.duration} {prog.duration === 1 ? "Day" : "Days"}
           </span>
           <h2
             style={{
@@ -157,8 +157,8 @@ function ProgramCard({
                     <>
                       <p className="text-xs tracking-widest uppercase mb-4" style={{ color: "#5C6B57" }}>Batches</p>
                       <div className="space-y-3 mb-8">
-                        {prog.batches.map(b => (
-                          <div key={b.name} className="flex items-center gap-3">
+                        {prog.batches.map((b, bi) => (
+                          <div key={`${b.name}-${bi}`} className="flex items-center gap-3">
                             <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(92,107,87,0.1)" }}>
                               <Check size={11} style={{ color: "#5C6B57" }} />
                             </div>
@@ -173,9 +173,9 @@ function ProgramCard({
                     <>
                       <p className="text-xs tracking-widest uppercase mb-4" style={{ color: "#5C6B57" }}>Levels</p>
                       <div className="flex flex-wrap gap-2">
-                        {prog.levels.map(l => (
+                        {prog.levels.map((l, li) => (
                           <span
-                            key={l}
+                            key={`${l}-${li}`}
                             className="text-xs px-3 py-1.5 rounded-full"
                             style={{ background: "rgba(92,107,87,0.08)", color: "#5C6B57", border: "1px solid rgba(92,107,87,0.2)" }}
                           >
@@ -193,9 +193,9 @@ function ProgramCard({
                     <>
                       <p className="text-xs tracking-widest uppercase mb-6" style={{ color: "#5C6B57" }}>What&apos;s Included</p>
                       <div className="space-y-3 mb-10">
-                        {prog.features.map(item => (
+                        {prog.features.map((item, fi) => (
                           <motion.div
-                            key={item}
+                            key={`${item}-${fi}`}
                             className="flex items-center gap-3"
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}

@@ -121,8 +121,8 @@ function MentorCard({
                 <div className="col-span-2">
                   <p style={{ color: "var(--adm-text-3)" }}>Batches</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
-                    {stats.program.batches.map(b => (
-                      <span key={b.name} className="px-2 py-0.5 rounded-full" style={{ background: "rgba(122,140,116,0.15)", color: "#7A8C74", border: "1px solid rgba(122,140,116,0.25)" }}>
+                    {stats.program.batches.map((b, bi) => (
+                      <span key={`${b.name}-${bi}`} className="px-2 py-0.5 rounded-full" style={{ background: "rgba(122,140,116,0.15)", color: "#7A8C74", border: "1px solid rgba(122,140,116,0.25)" }}>
                         {b.name} · {b.time}
                       </span>
                     ))}
